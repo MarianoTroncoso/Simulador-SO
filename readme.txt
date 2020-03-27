@@ -17,4 +17,5 @@ Simualdor.py		codigo
 simulador.ui 		archivo con el cual trabajamos sobre el programa Qt Designer (no interesa)
 simulador_db.db 	archivo que contiene la base de datos usada
 
-
+Universidad Tecnologica Nacional
+Facultad Regional de Resistencia
