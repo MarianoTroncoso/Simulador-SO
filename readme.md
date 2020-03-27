@@ -19,7 +19,6 @@ simulador_db.db 	archivo que contiene la base de datos usada
 
 <<<<<<< HEAD:readme.md
 
-aguante la droga
 
 =======
 Universidad Tecnologica Nacional
