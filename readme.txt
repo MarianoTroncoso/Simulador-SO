@@ -18,3 +18,5 @@ simulador.ui 		archivo con el cual trabajamos sobre el programa Qt Designer (no 
 simulador_db.db 	archivo que contiene la base de datos usada
 
 
+estoy probando algo
+
