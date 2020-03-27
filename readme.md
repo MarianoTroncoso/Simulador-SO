@@ -1,4 +1,4 @@
-				--SIMULADOR C1G7--
+SIMULADOR C1G7
 
 Simulador de planificacion de procesos y administracion de memoria.
 
@@ -7,7 +7,7 @@ ENTREGA FINAL
 Para saber como ejecutar el simulador, leer la guia de instalacion presentada.
 Basicamente se tiene que ejecutar por cmd el archivo "Simulador.py"
 
-				-- Archivos -- 
+Archivos:
 
 Documentacion_C1G7	documentacion del trabajo
 generadoPorQT.py 	codigo generado por Qt Designer
