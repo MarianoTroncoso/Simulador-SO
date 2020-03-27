@@ -1,0 +1,2091 @@
+import sys
+from PyQt5 import uic, QtWidgets
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5 import uic
+from PyQt5 import QtCore
+import matplotlib.pyplot as plt
+from PyQt5.QtChart import QChart, QChartView, QBarSet, QHorizontalPercentBarSeries, QBarCategoryAxis, QValueAxis
+import numpy as np 
+import random 
+import copy
+import sqlite3
+from sqlite3 import Error
+
+class Ui(QtWidgets.QMainWindow):
+
+	# metodo constructor de la clase ventana
+	def __init__(self):
+		super(Ui, self).__init__()
+		uic.loadUi('simulador.ui', self)
+		self.setWindowTitle("Simulador")
+
+		# CARGA DE COLAS DESDE LA BASE DE DATOS
+		self.statusbar = QtWidgets.QStatusBar(self)
+		self.statusbar.setObjectName("statusbar")
+		self.setStatusBar(self.statusbar)
+		self.menubar = QtWidgets.QMenuBar(self)
+		self.menubar.setGeometry(QtCore.QRect(0, 0, 858, 21))
+		self.menubar.setObjectName("menubar")
+		
+		# ----------------------------------- CARGAR COLAS DE PROCESOS -----------------------------------
+
+		self.menuFile = self.menubar.addMenu('&Colas')		
+		# self.menuFile = QtWidgets.QMenu(self.menubar)
+		# self.menuFile.setObjectName("menuFile")
+		# self.menuFile.setTitle("File")
+		# self.setMenuBar(self.menubar)
+
+		self.actionCargarProcesos1 = QtWidgets.QAction(self)
+		self.actionCargarProcesos1.setObjectName("actionCargarProcesos1")
+		self.actionCargarProcesos1.setText("Cargar Cola 1")
+		self.menuFile.addAction(self.actionCargarProcesos1)
+
+		self.actionCargarProcesos2 = QtWidgets.QAction(self)
+		self.actionCargarProcesos2.setObjectName("actionCargarProcesos2")
+		self.actionCargarProcesos2.setText("Cargar Cola 2")
+		self.menuFile.addAction(self.actionCargarProcesos1)
+
+		self.actionCargarProcesos2 = QtWidgets.QAction(self)
+		self.actionCargarProcesos2.setObjectName("actionCargarProcesos2")
+		self.actionCargarProcesos2.setText("Cargar Cola 2")
+		self.menuFile.addAction(self.actionCargarProcesos2)
+
+		self.actionCargarProcesos3 = QtWidgets.QAction(self)
+		self.actionCargarProcesos3.setObjectName("actionCargarProcesos3")
+		self.actionCargarProcesos3.setText("Cargar Cola 3")
+		self.menuFile.addAction(self.actionCargarProcesos3)
+
+		self.actionCargarProcesos1.triggered.connect(self.cargar_tabla_procesos1)
+		self.actionCargarProcesos2.triggered.connect(self.cargar_tabla_procesos2)
+		self.actionCargarProcesos3.triggered.connect(self.cargar_tabla_procesos3)
+
+		# ----------------------------------- CARGAS DE TRABAJO -----------------------------------
+
+		self.cargaTarabajoMenu = self.menubar.addMenu('&Carga de Trabajo')
+
+		self.actionCargaTrabajo1 = QtWidgets.QAction(self)
+		self.actionCargaTrabajo1.setObjectName("CargaTrabajo1")
+		self.actionCargaTrabajo1.setText("Cargar de Trabajo 1")
+		self.cargaTarabajoMenu.addAction(self.actionCargaTrabajo1)
+
+		self.actionCargaTrabajo1.triggered.connect(self.cargaTrabajo1)
+
+
+		# self.menubar.addAction(self.menuFile.menuAction())
+
+		# ----------------------------------- PESTAÑA DE ENTRADA -----------------------------------
+
+		# al abrir que, la pestaña de Entrada se muestre primero
+		self.tabWidget.setCurrentIndex(0)
+
+		# TAMAÑO DE MEMORIA
+		self.TamMemSpinBox.setMaximum(4096) 
+		self.TamMemSpinBox.setMinimum(32)		
+		self.TamMemSpinBox.setValue(1024)
+
+		# PORCION DE MEMORIA DEL SO
+		# left, top, width and height
+		self.TamSoLabel = QtWidgets.QLabel(self.EntradaIzqGroupBox)
+		self.TamSoLabel.setObjectName("TamSoLabel")
+		self.TamSoLabel.setGeometry(QtCore.QRect(20, 70, 241, 20))
+		self.TamSoLabel.setText('% para el SO')
+
+		self.TamSoSpinBox = QtWidgets.QSpinBox(self.EntradaIzqGroupBox)
+		self.TamSoSpinBox.setMinimum(10)
+		self.TamSoSpinBox.setMaximum(30)
+		self.TamSoSpinBox.setObjectName("TamSoSpinBox")
+		self.TamSoSpinBox.setGeometry(QtCore.QRect(139, 70, 112, 20))
+
+		self.EntradaArribaLine.setGeometry(QtCore.QRect(10, 105, 241, 20))
+
+		# PARTICIONES FIJAS O VARIABLES
+		self.VariablesRadioButton.setChecked(True)
+		self.BestRadioButton.setEnabled(False) # porque por defecto esta el particionado variable
+		self.PartFijaGroupBox.setVisible(False)
+		# self.FijasRadioButton.clicked.connect(self.clickEvent)
+		# self.VariablesRadioButton.clicked.connect(self.clickEvent)
+
+		self.PartLabel.setGeometry(QtCore.QRect(30, 125, 71, 16))
+		self.VariablesRadioButton.setGeometry(QtCore.QRect(60, 150, 82, 17))
+		self.FijasRadioButton.setGeometry(QtCore.QRect(160, 150, 51, 17))
+
+		# PARTICIONES FIJAS
+		self.AgregarPartPushButton.clicked.connect(self.agregar_particion)
+		self.NroEspacioDispLabel.setText('0')
+
+		self.TamPartSpinBox.setMaximum(99999)
+		self.TamPartSpinBox.setMinimum(1)
+		self.ParticionesTableWidget.verticalHeader().setVisible(False)
+		# para que no aparezca la barra de desplazamiento en la tabla (queda mal)
+		header = self.ParticionesTableWidget.horizontalHeader()
+		header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+		header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+		self.EliminarPartPushButton.clicked.connect(self.eliminar_particion)
+		self.PartFijaGroupBox.setGeometry(QtCore.QRect(-1, 170, 281, 271))
+
+		self.EspacioOcupProgressBar.setProperty("value", 0)
+
+		self.EntradaAbajoLine.setGeometry(QtCore.QRect(49, 470, 241, 20))
+
+		# METODO DE ASIGNACION
+		self.FirstRadioButton.setChecked(True)
+		self.QuantumLabel.setVisible(False)
+		self.QuantumSpinBox.setVisible(False)
+		self.QuantumSpinBox.setMinimum(1)
+		self.QuantumSpinBox.setMaximum(5)
+		self.QuantumSpinBox.setValue(1)
+
+		self.MetAsigGroupBox.setGeometry(QtCore.QRect(20, 475, 240, 100))
+
+		# NUMERO DE COLAS
+		self.NroColasLabel = QtWidgets.QLabel(self.AlgoritmoGroupBox)
+		self.NroColasLabel.setObjectName("TamSoLabel")
+		self.NroColasLabel.setGeometry(QtCore.QRect(29, 70, 241, 20))
+		self.NroColasLabel.setText('Nro de colas')
+		self.NroColasLabel.setVisible(False)
+		self.NroColasBox = QtWidgets.QSpinBox(self.AlgoritmoGroupBox)
+		self.NroColasBox.setMinimum(1)
+		self.NroColasBox.setMaximum(3)
+		self.NroColasBox.setValue(1)
+		self.NroColasBox.setObjectName("NroColasBox")
+		self.NroColasBox.setGeometry(QtCore.QRect(140, 70, 70, 20))
+		self.NroColasBox.setVisible(False)
+
+		# ALGORITMOS DE PLANIFICACION
+		self.AlgoritmoGroupBox.setGeometry(QtCore.QRect(20, 590, 240, 120))
+		# algoritmo SJF agregado 
+		self.AlgortimoComboBox.addItem("")
+
+		self.AlgortimoComboBox.setItemText(0, "First Come First Service (FCFS)")
+		self.AlgortimoComboBox.setItemText(1, "Prioridades")
+		self.AlgortimoComboBox.setItemText(2, "Multilevel Queue (MLQ)")
+		self.AlgortimoComboBox.setItemText(3, "Round Robin with Quantum (RRQ)")
+		self.AlgortimoComboBox.setItemText(4, "Short Job First (SJF)")
+
+		# LISTA DE PROCESOS CARGADOS
+		self.ListProcCargTableWidget.setColumnCount(5)
+		aux = ['Proceso','Tamaño', 'Arribo', 'Prioridad','Rafagas']
+		self.ListProcCargTableWidget.setHorizontalHeaderLabels(aux)
+		self.ListProcCargTableWidget.verticalHeader().setVisible(False)
+		# para que el ancho de la columnas de rafagas sea mayor 
+		header = self.ListProcCargTableWidget.horizontalHeader()
+		header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+		header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+		header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+		header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+		header.setSectionResizeMode(4, QtWidgets.QHeaderView.Stretch)
+		self.BorrarTablaPushButton.clicked.connect(self.borrar_lista_procesos)
+		self.BorrarSeleccionPushButton.clicked.connect(self.borrar_un_proceso)
+
+		# NUEVO PROCESO
+		self.NuevoProcGroupBox.setGeometry(QtCore.QRect(20, 25, 440, 340))
+		self.ListaProcCargLabel.setGeometry(QtCore.QRect(30, 375, 131, 16))
+		self.ListProcCargTableWidget.setGeometry(QtCore.QRect(20, 400, 440, 251))
+		# nuevas posiciones de las etiquetas
+		self.TALabel.setGeometry(QtCore.QRect(322, 30, 60, 20))
+		self.TALabel.setText('Arribo')
+		self.TamProcLabel.setGeometry(QtCore.QRect(160, 30, 81, 20))
+		# nuevas posiciones de los spinbox
+		self.TamProcSpinBox.setGeometry(QtCore.QRect(229, 30, 50, 22))
+		self.TASpinBox.setGeometry(QtCore.QRect(360, 30, 60, 22))
+		# demas configuraciones
+		self.ProcActualTableWidget.horizontalHeader().setVisible(False)
+		self.ProcActualTableWidget.verticalHeader().setVisible(False)
+		self.IdProcSpinBox.setMaximum(100)
+		self.IdProcSpinBox.setMinimum(1) 
+		self.IdProcSpinBox.setValue(1) 
+		self.TASpinBox.setMaximum(100)
+		self.TASpinBox.setMinimum(0)
+		self.TASpinBox.setValue(0)
+
+		self.TamProcSpinBox.setMaximum(self.TamMemSpinBox.value() * 0.9)
+		self.TamProcSpinBox.setMinimum(1)
+		self.TamProcSpinBox.setValue(1)
+		filas = self.ProcActualTableWidget.verticalHeader()
+		filas.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+		filas.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+		self.AgregarProcPushButton.clicked.connect(self.agregar_proceso)
+		self.AgregarPushButton.clicked.connect(self.agregar_rafaga)
+
+		self.AgregarProcPushButton.setGeometry(QtCore.QRect(320, 295, 100, 30))
+		
+		self.PrioridadLabel = QtWidgets.QLabel(self.NuevoProcGroupBox)
+		self.PrioridadLabel.setGeometry(QtCore.QRect(20, 250, 90, 17))
+		self.PrioridadLabel.setObjectName("PrioridadLabel")
+		self.PrioridadLabel.setText("Prioridad")
+
+		self.ColaRandomButton = QtWidgets.QRadioButton(self.NuevoProcGroupBox)
+		self.ColaRandomButton.setGeometry(QtCore.QRect(210, 250, 80, 17))
+		self.ColaRandomButton.setObjectName("ColaRandomButton")
+		self.ColaRandomButton.setText("Aleatoria")
+
+		self.ColaElegidaButton = QtWidgets.QRadioButton(self.NuevoProcGroupBox)
+		self.ColaElegidaButton.setGeometry(QtCore.QRect(100, 250, 100, 17))
+		self.ColaElegidaButton.setObjectName("ColaElegidaButton")
+		self.ColaElegidaButton.setText("Elegir")
+
+		self.ColaRandomButton.setChecked(True)
+
+		self.PrioridadComboBox = QtWidgets.QComboBox(self.NuevoProcGroupBox)
+		self.PrioridadComboBox.setGeometry(QtCore.QRect(100, 280, 100, 22))
+		self.PrioridadComboBox.setObjectName("PrioridadComboBox")
+		self.PrioridadComboBox.addItem("")
+		self.PrioridadComboBox.addItem("")
+		self.PrioridadComboBox.addItem("")
+		self.PrioridadComboBox.setItemText(0, "Baja")
+		self.PrioridadComboBox.setItemText(1, "Media")
+		self.PrioridadComboBox.setItemText(2, "Alta")
+
+		self.PrioridadComboBox.setVisible(False)
+
+		self.ColaRandomButton.clicked.connect(self.clickEvent)
+		self.ColaElegidaButton.clicked.connect(self.clickEvent)
+
+		self.INICIARPushButton.clicked.connect(self.planificar)
+
+		# ----------------------------------- PESTAÑA DE SALIDA -----------------------------------
+		self.DiagramaGanttPushButton.clicked.connect(self.graficar_gantt)
+
+		self.ColaCPULabel.setText('Cola de Listos')
+		self.ColaCPULabel.setGeometry(QtCore.QRect(45, 185, 70, 13))
+		self.ColaSuspLabel.setText('Cola disp. Entrada')
+		self.ColaSuspLabel.setGeometry(QtCore.QRect(20, 247, 111, 31))
+		self.CargEnMemLabel.setText('Cola disp. Salida')
+		self.CargEnMemLabel.setGeometry(QtCore.QRect(38, 315, 111, 31))
+
+		self.enCpuLabel = QtWidgets.QLabel(self.ProcesamPorTiempoGroupBox)
+		self.enCpuLabel.setObjectName("enCpu")
+		self.enCpuLabel.setGeometry(QtCore.QRect(38, 384, 111, 31))
+		self.enCpuLabel.setText("Proceso en CPU")
+
+		self.idEnCpuLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+		self.idEnCpuLabel.setObjectName("idEnCpuLabel")
+		self.IDsProcsVerticalLayout.addWidget(self.idEnCpuLabel)
+		self.idEnCpuLabel.setText("0")
+
+		self.PartOcupTextEdit.setReadOnly(True)
+		self.HistPlanifTextEdit.setReadOnly(True)
+
+		# Como aregramos el boton para poder ver el mapa de memoria,
+		# tuvimos que hacer las siguientes modificaciones, las cuales basicamente son 
+		# cambios en los parametros las posicion de widgets adyacentes 
+		self.PartOcupTextEdit.setGeometry(QtCore.QRect(140, 500, 131, 81))
+		self.ProcesamPorTiempoGroupBox.setGeometry(QtCore.QRect(70, 50, 291, 670))
+		self.GraficarDiagMemPushButton = QtWidgets.QPushButton(self.ProcesamPorTiempoGroupBox)
+		self.GraficarDiagMemPushButton.setGeometry(QtCore.QRect(147, 600, 120, 40))
+		self.GraficarDiagMemPushButton.setObjectName("GraficarDiagMemPushButton")
+		self.GraficarDiagMemPushButton.setText('Diagrama de Memoria')
+		self.SalidaVerticalLine.setGeometry(QtCore.QRect(120, 20, 20, 625))
+
+		self.SegundoSpinBox.setEnabled(False) # recien se activa cuando se inicia la simulacion
+
+		# self.GraficarDiagMemPushButton.clicked.connect(self.mostrarMapaMemoria)
+		self.GraficarDiagMemPushButton.clicked.connect(self.mostrarMapaMemoria)
+
+		# procesamiento por tiempo
+		self.SegundoSpinBox.valueChanged.connect(self.resultadosPorTiempo)
+
+		# A VER SI AHORA ANDA
+		self.FijasRadioButton.clicked.connect(self.clickEvent)
+		self.VariablesRadioButton.clicked.connect(self.clickEvent)
+		self.AlgortimoComboBox.currentTextChanged.connect(self.clickEvent)
+
+		# modificaciones necesarias para el sector de promedios
+		self.HistDePlanifGroupBox.setGeometry(QtCore.QRect(430, 50, 341, 590))
+
+		# modificaciones necesarias para agregar la opcion de seleccionar cola donde se quieren guardar los procesos
+		# en la base de datos
+		# left, top, width and height
+		self.HistPlanifTextEdit.setGeometry(QtCore.QRect(30, 40, 281, 430))
+
+		self.DiagramaGanttPushButton.setGeometry(QtCore.QRect(30, 495, 111, 41))
+		self.GuardarColaPushButton.setGeometry(QtCore.QRect(200, 495, 111, 41))
+
+		# seccion de seleccion de la cola
+		self.ColaSeleccionadaLabel = QtWidgets.QLabel(self.HistDePlanifGroupBox)
+		self.ColaSeleccionadaLabel.setGeometry(QtCore.QRect(206, 538, 100, 20)) # 553
+		self.ColaSeleccionadaLabel.setObjectName("ColaSeleccionadaLabel")
+		self.ColaSeleccionadaLabel.setText("Guardar en cola nro")
+
+		self.ColaSelecSpinBox = QtWidgets.QSpinBox(self.HistDePlanifGroupBox)
+		self.ColaSelecSpinBox.setGeometry(QtCore.QRect(235, 560, 42, 20)) # 580
+		self.ColaSelecSpinBox.setObjectName("ColaSelec")
+		self.ColaSelecSpinBox.setMinimum(1)
+		self.ColaSelecSpinBox.setMaximum(3)
+		self.ColaSelecSpinBox.setValue(1)
+
+		self.GuardarColaPushButton.clicked.connect(self.guardarColaProcesos)
+
+		# PROMEDIOS
+		self.PromediosGroupBox = QtWidgets.QGroupBox(self.SalidaTab)     
+		self.PromediosGroupBox.setGeometry(QtCore.QRect(430, 654, 343, 70))
+		self.PromediosGroupBox.setObjectName("PromediosGroupBox")
+		self.PromediosGroupBox.setTitle("Promedios")
+
+		self.TiempoEsperaLabel = QtWidgets.QLabel(self.PromediosGroupBox)
+		self.TiempoEsperaLabel.setGeometry(QtCore.QRect(50, 15, 100, 20)) 
+		self.TiempoEsperaLabel.setObjectName("TiempoEsperaLabel")
+		self.TiempoEsperaLabel.setText("Tiempo de Espera: ")
+
+		self.TiempoRetornoLabel = QtWidgets.QLabel(self.PromediosGroupBox)
+		self.TiempoRetornoLabel.setGeometry(QtCore.QRect(50, 37, 100, 20)) 
+		self.TiempoRetornoLabel.setObjectName("TiempoRetornoLabel")
+		self.TiempoRetornoLabel.setText("Tiempo de Retorno: ")
+
+		self.ValorEsperaLabel = QtWidgets.QLabel(self.PromediosGroupBox)
+		self.ValorEsperaLabel.setGeometry(QtCore.QRect(220, 15, 100, 20)) 
+		self.ValorEsperaLabel.setObjectName("ValorEsperaLabel")
+		self.ValorEsperaLabel.setText("123.123 ")
+
+		self.ValorRetornoLabel = QtWidgets.QLabel(self.PromediosGroupBox)
+		self.ValorRetornoLabel.setGeometry(QtCore.QRect(220, 37, 100, 20))
+		self.ValorRetornoLabel.setObjectName("ValorRetornoLabel")
+		self.ValorRetornoLabel.setText("456.456 ")
+
+	# PROCESOS DE LA CLASE VENTANA / UI
+
+	# ante la seleccion de las partciones y algoritmos, muestra sus respectivas opciones adicionales
+	# ya sea la configuracion de las particiones fijas o la del quantum
+	def clickEvent(self):
+		# selecciono la opcion de RRQ
+		if self.AlgortimoComboBox.currentIndex() == 3:
+			self.QuantumLabel.setVisible(True)
+			self.QuantumSpinBox.setVisible(True)
+		else:
+			self.QuantumLabel.setVisible(False)
+			self.QuantumSpinBox.setVisible(False)
+		# selecciono la opcion de colas multinivel
+		if self.AlgortimoComboBox.currentIndex() == 2:
+			self.NroColasLabel.setVisible(True)
+			self.NroColasBox.setVisible(True)
+		else:
+			self.NroColasLabel.setVisible(False)
+			self.NroColasBox.setVisible(False)
+		# seleccion parciones fijas
+		if self.FijasRadioButton.isChecked():
+			self.PartFijaGroupBox.setVisible(True)
+			# para este particionado, solamente se tienen diponibles FF Y BF, no WF
+			self.WorstRadioButton.setEnabled(False)
+			self.BestRadioButton.setEnabled(True)
+		else:
+			self.PartFijaGroupBox.setVisible(False)
+			# para este particionado, solamente se tienen disponibles FF Y WF, no BF
+			self.WorstRadioButton.setEnabled(True)
+			self.BestRadioButton.setEnabled(False)
+
+		# NO SE POR QUE TIRO ERROR 
+		if self.ColaElegidaButton.isChecked():
+			self.PrioridadComboBox.setVisible(True)
+			self.ColaRandomButton.setChecked(False)
+		else:
+			self.PrioridadComboBox.setVisible(False)
+
+	def cargar_tabla_procesos1(self):
+		self.cargar_cola(1)
+	def cargar_tabla_procesos2(self):
+		self.cargar_cola(2)
+	def cargar_tabla_procesos3(self):
+		self.cargar_cola(3)
+
+	# ------------------------------------- METODOS PARA LA BASE DE DATOS -------------------------------------
+
+	def	cargar_cola(self, cola):
+		# FALTA EL CONTROL DE NO CARGAR OTRA COLA ABAJO ! Y DESPUES AGREGAR A LA DOCUMENTACION
+		# conexion a la base de datos
+		if self.ListProcCargTableWidget.rowCount() == 0:
+			con = sqlite3.connect('simulador_db.db')
+
+			# si no existe la tabla, la crea
+			cursorObj = con.cursor()
+			cursorObj.execute("CREATE TABLE if not exists procesos(id_conjunto integer , idp integer, tamaño integer, arribo integer, prioridad text, rafagas text, PRIMARY KEY(id_conjunto, idp))")
+			con.commit()
+
+			cursorObj.execute('SELECT * FROM procesos')
+			if len(cursorObj.fetchall()) == 0:
+				# la primera que vez que se ejecuta el simulador en una pc, si se quieren cargar colas, se generar 3 aleatorias
+				# a partir de aqui se pueden usar las mismas, o guardar otras 
+
+				# CARGAR TABLA
+				for j in range(1,4):
+					nuevos_procesos = []
+					for i in range(1,11):
+						tam = random.randint(1,30)
+						arribo = random.randint(0,11)
+						p = ['A', 'M', 'B']
+						prioridad = random.choice(p)
+						rafagas = 'CPU: ' + str(random.randint(1,10)) + ';'
+
+						if i % 2 == 0:
+							rafagas = rafagas + ' S: ' + str(random.randint(1,10)) + ';'
+						else:
+							rafagas = rafagas + ' E: ' + str(random.randint(1,10)) + ';'
+
+						rafagas = rafagas + ' CPU: ' + str(random.randint(1,10)) + ';'
+
+						# print(rafagas)
+
+						# primer campo es el id_conjunto
+						reg = (j, i, tam, arribo, prioridad, rafagas)
+						nuevos_procesos.append(reg)
+
+					con = sqlite3.connect('simulador_db.db')
+					cursorObj = con.cursor()
+					cursorObj.executemany("INSERT INTO procesos VALUES(?, ?, ?, ?, ?, ?)", nuevos_procesos)
+					con.commit()
+
+			# hacemos la consulta
+			cursorObj = con.cursor()
+			if cola == 1:
+				cursorObj.execute('SELECT * FROM procesos WHERE id_conjunto = 1')
+			if cola == 2:
+				cursorObj.execute('SELECT * FROM procesos WHERE id_conjunto = 2')
+			if cola == 3:
+				cursorObj.execute('SELECT * FROM procesos WHERE id_conjunto = 3')
+
+			rows = cursorObj.fetchall()
+			for row in rows:
+				fila = str(row)
+				fila = fila.replace('(', '')
+				fila = fila.replace(')', '')
+				fila = fila.replace("'", '')
+
+				fila = fila.split(',')
+
+				self.ListProcCargTableWidget.setRowCount(self.ListProcCargTableWidget.rowCount()+1)
+
+				proc=QtWidgets.QTableWidgetItem(str(fila[1]))
+				proc.setTextAlignment(Qt.AlignCenter) 
+				tam=QtWidgets.QTableWidgetItem(str(fila[2]))
+				tam.setTextAlignment(Qt.AlignCenter)
+				ta=QtWidgets.QTableWidgetItem(str(fila[3]))
+				ta.setTextAlignment(Qt.AlignCenter)
+				pri=QtWidgets.QTableWidgetItem(str(fila[4]))
+				pri.setTextAlignment(Qt.AlignCenter)
+
+				raf=QtWidgets.QTableWidgetItem(fila[5]+'')
+
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1,0,proc)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1,1,tam)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1,2,ta)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1,3,pri)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1,4,raf)
+
+			self.IdProcSpinBox.setValue(self.ListProcCargTableWidget.rowCount()+1)
+
+	def guardarColaProcesos(self):
+
+		nc = self.ListProcCargTableWidget.rowCount()
+		nuevos_procesos = []
+		
+		for i in range(nc):
+
+			con = sqlite3.connect('simulador_db.db')
+			cursorObj = con.cursor()
+			proc = list()
+
+			id_conj = int(self.ColaSelecSpinBox.value())
+			idp = int(self.ListProcCargTableWidget.item(i,0).text())
+			tam  = int(self.ListProcCargTableWidget.item(i,1).text())
+			ta = int(self.ListProcCargTableWidget.item(i,2).text())
+			pri = str(self.ListProcCargTableWidget.item(i,3).text())
+			rafs = str(self.ListProcCargTableWidget.item(i,4).text())
+
+			proc = (id_conj, idp, tam, ta, pri, rafs)
+			nuevos_procesos.append(proc)
+			# print( proc)
+
+		if id_conj == 1:
+			cursorObj.execute('DELETE FROM procesos WHERE id_conjunto = 1')
+		if id_conj == 2:
+			cursorObj.execute('DELETE FROM procesos WHERE id_conjunto = 2')
+		if id_conj == 3:
+			cursorObj.execute('DELETE FROM procesos WHERE id_conjunto = 3')
+
+		cursorObj.executemany("INSERT INTO procesos VALUES(?, ?, ?, ?, ?, ?)", nuevos_procesos)
+		con.commit()
+
+	# ----------------------------------- PROCESOS DE CARGA DE TRABAJO -----------------------------------
+
+	# metodos par setear las configuraciones para hacer una simulacion
+	def cargaTrabajo1(self):
+
+		# particiones
+
+		self.FijasRadioButton.setChecked(True)
+		self.clickEvent()
+
+		self.ParticionesTableWidget.setRowCount(self.ParticionesTableWidget.rowCount()+1)
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,0,QTableWidgetItem(str(1)))
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,1,QTableWidgetItem(str(400)))
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,0).setTextAlignment(Qt.AlignCenter)
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,1).setTextAlignment(Qt.AlignCenter)
+
+		self.ParticionesTableWidget.setRowCount(self.ParticionesTableWidget.rowCount()+1)
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,0,QTableWidgetItem(str(2)))
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,1,QTableWidgetItem(str(200)))
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,0).setTextAlignment(Qt.AlignCenter)
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,1).setTextAlignment(Qt.AlignCenter)
+
+		self.ParticionesTableWidget.setRowCount(self.ParticionesTableWidget.rowCount()+1)
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,0,QTableWidgetItem(str(3)))
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,1,QTableWidgetItem(str(200)))
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,0).setTextAlignment(Qt.AlignCenter)
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,1).setTextAlignment(Qt.AlignCenter)
+
+		self.ParticionesTableWidget.setRowCount(self.ParticionesTableWidget.rowCount()+1)
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,0,QTableWidgetItem(str(4)))
+		self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,1,QTableWidgetItem(str(122)))
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,0).setTextAlignment(Qt.AlignCenter)
+		self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,1).setTextAlignment(Qt.AlignCenter)
+
+		self.EspacioOcupProgressBar.setProperty("value",100)
+
+		# metodo de asignacion 
+		self.BestRadioButton.setChecked(True)
+
+		# algoritmo 
+		self.AlgortimoComboBox.setCurrentIndex(3) 
+		self.QuantumSpinBox.setValue(5)
+
+
+	# ----------------------------------- DEMAS PROCESOS DE CLASE VENTANA -----------------------------------
+
+	def borrar_lista_procesos(self):
+		i=0
+		while self.ListProcCargTableWidget.rowCount()>0:
+			self.ListProcCargTableWidget.removeRow(i)
+		self.IdProcSpinBox.setValue(self.ListProcCargTableWidget.rowCount()+1)
+
+		# si borramos todos los procesos, podemos editar algunas configuraciones
+		if self.ListProcCargTableWidget.rowCount() == 0:
+			self.EntradaIzqGroupBox.setEnabled(True)
+
+	def borrar_un_proceso(self):
+		borrar = []
+		nf = self.ListProcCargTableWidget.rowCount()
+		for i in range(nf):
+			if self.ListProcCargTableWidget.item(i,0).isSelected():
+				borrar.append(i)
+		for i in borrar:
+			self.ListProcCargTableWidget.removeRow(i)
+		if self.ListProcCargTableWidget.rowCount() == 0:
+			self.IdProcSpinBox.setValue(1)
+		else:
+			self.actualizar_procesos()
+
+		# si borramos todos los procesos, podemos editar algunas configuraciones
+		if self.ListProcCargTableWidget.rowCount() == 0:
+			self.EntradaIzqGroupBox.setEnabled(True)
+
+	def actualizar_procesos(self):
+		nf = int(self.ListProcCargTableWidget.rowCount())
+		for i in range(nf):
+			self.ListProcCargTableWidget.item(i,0).setText(str(i))
+
+	def agregar_particion(self):
+		mem_dip = self.TamMemSpinBox.value() - int(self.TamMemSpinBox.value() * self.TamSoSpinBox.value()/100)
+		# print(mem_dip)
+
+		if self.ParticionesTableWidget.rowCount() == 0:
+			# control de que la unica particion que voy a cargar no supere el tam de la memoria diponible 
+			# mem_dip = self.TamMemSpinBox.value() - int(self.TamMemSpinBox.value() * self.TamSoSpinBox.value()/100)
+			if self.TamPartSpinBox.value() <= mem_dip:
+				# Nueva particion
+				self.ParticionesTableWidget.setRowCount(self.ParticionesTableWidget.rowCount()+1)
+				self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,0,QTableWidgetItem(str(self.ParticionesTableWidget.rowCount()+1)))
+				tam_part = self.TamPartSpinBox.value()
+				self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,1,QTableWidgetItem(str(tam_part)))
+				self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,0).setTextAlignment(Qt.AlignCenter)
+				self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,1).setTextAlignment(Qt.AlignCenter)
+				self.TamPartSpinBox.setStyleSheet("background-color: rgb(255,255,255);")#blanco
+
+				# actualizo etiqueta de espacio disponible
+				self.NroEspacioDispLabel.setText(str(mem_dip - tam_part))
+
+				ocupado = tam_part + int(100 * self.TamSoSpinBox.value()/ self.TamMemSpinBox.value())
+				self.EspacioOcupProgressBar.setProperty("value", ocupado * 100 / self.TamMemSpinBox.value() )
+
+				self.TamMemSpinBox.setReadOnly(True)
+				self.TamSoSpinBox.setReadOnly(True)
+
+			else:
+				# tam particion supera al tam de la memoria 
+				self.TamPartSpinBox.setStyleSheet("background-color: rgb(255,0,0);")
+		else:
+			ocup = 0 
+			for i in range(self.ParticionesTableWidget.rowCount()):
+				ocup = ocup + int(self.ParticionesTableWidget.item(i,1).text())
+
+			if  self.TamPartSpinBox.value() <= (mem_dip - ocup):
+				# Nueva particion
+				self.ParticionesTableWidget.setRowCount(self.ParticionesTableWidget.rowCount()+1)
+				self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,0,QTableWidgetItem(str(self.ParticionesTableWidget.rowCount()+1)))
+				tam_part = self.TamPartSpinBox.value()
+				self.ParticionesTableWidget.setItem(self.ParticionesTableWidget.rowCount()-1,1,QTableWidgetItem(str(tam_part)))
+				self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,0).setTextAlignment(Qt.AlignCenter)
+				self.ParticionesTableWidget.item(self.ParticionesTableWidget.rowCount()-1,1).setTextAlignment(Qt.AlignCenter)
+				self.TamPartSpinBox.setStyleSheet("background-color: rgb(255,255,255);")#blanco
+
+				# actualizo etiqueta de espacio disponible
+				self.NroEspacioDispLabel.setText(str(mem_dip - ocup - tam_part))
+
+				# ocupado = ocup + tam_part + int(100 * self.TamSoSpinBox.value()/self.TamMemSpinBox.value())
+				ocupado = ocup + tam_part + int(self.TamSoSpinBox.value() * self.TamMemSpinBox.value() / 100)
+				self.EspacioOcupProgressBar.setProperty("value", ocupado * 100 / self.TamMemSpinBox.value() )
+
+				self.TamMemSpinBox.setReadOnly(True)
+				self.TamSoSpinBox.setReadOnly(True)
+
+			else:
+				self.TamPartSpinBox.setStyleSheet("background-color: rgb(255,0,0);")#rojo
+
+		# lo que antes hacia actualizar_particion
+		for i in range(self.ParticionesTableWidget.rowCount()):
+				self.ParticionesTableWidget.item(i,0).setText(str(i+1))
+
+	def eliminar_particion(self):
+		borrar = []
+		nf = self.ParticionesTableWidget.rowCount()
+		for i in range(nf):
+			if self.ParticionesTableWidget.item(i,0).isSelected() or self.ParticionesTableWidget.item(i,1).isSelected():
+				borrar.append(i)
+		for i in borrar:
+			self.ParticionesTableWidget.removeRow(i)
+
+		self.actualizar_particion()
+
+		# si se eliminan todas las particiones recien se puede cambiar el tamaño de la memoria, pero solo con las flechas del spinbox
+		if self.ParticionesTableWidget.rowCount() == 0:
+			self.TamMemSpinBox.setReadOnly(False)
+			self.TamSoSpinBox.setReadOnly(False)
+
+	def actualizar_particion(self):
+		ocupado = 0 
+		for i in range(self.ParticionesTableWidget.rowCount()):
+			self.ParticionesTableWidget.item(i,0).setText(str(i+1))
+			if self.ParticionesTableWidget.item(i,1).text() != '':
+				# ocupado en particiones
+				ocupado = ocupado + int(self.ParticionesTableWidget.item(i,1).text())
+
+		mem_dip = self.TamMemSpinBox.value() - int(100 * self.TamSoSpinBox.value()/self.TamMemSpinBox.value())
+		self.NroEspacioDispLabel.setText(str(mem_dip - ocupado))
+
+		ocupado = ocupado + int(100 * self.TamSoSpinBox.value()/self.TamMemSpinBox.value())
+		self.EspacioOcupProgressBar.setProperty("value", ocupado * 100 / self.TamMemSpinBox.value())
+	
+	def agregar_rafaga(self):
+		# contrl por si no selecciona ninguna
+		if self.EntradaRadioButton.isChecked() or self.SalidaRadioButton.isChecked():
+			# agrega columna
+			self.ProcActualTableWidget.setColumnCount(self.ProcActualTableWidget.columnCount()+1)
+			# pregunta por entrada o salida 
+			if (self.EntradaRadioButton.isChecked()):
+				self.ProcActualTableWidget.setItem(0, self.ProcActualTableWidget.columnCount()-1, QTableWidgetItem('E'))
+			if (self.SalidaRadioButton.isChecked()):
+				self.ProcActualTableWidget.setItem(0, self.ProcActualTableWidget.columnCount()-1, QTableWidgetItem('S'))
+			# pone 0 al valor de tiempo
+			self.ProcActualTableWidget.setItem(1, self.ProcActualTableWidget.columnCount()-1, QTableWidgetItem('0'))
+			# alinea el contenido
+			self.ProcActualTableWidget.item(0,self.ProcActualTableWidget.columnCount()-1).setTextAlignment(Qt.AlignCenter)
+			self.ProcActualTableWidget.item(1,self.ProcActualTableWidget.columnCount()-1).setTextAlignment(Qt.AlignCenter)
+			# agrega si o si otra rafaga de CPU, tiempo 0, alinea 
+			self.ProcActualTableWidget.setColumnCount(self.ProcActualTableWidget.columnCount()+1)
+			self.ProcActualTableWidget.setItem(0, self.ProcActualTableWidget.columnCount()-1, QTableWidgetItem('CPU'))
+			self.ProcActualTableWidget.setItem(1, self.ProcActualTableWidget.columnCount()-1, QTableWidgetItem('0'))
+			self.ProcActualTableWidget.item(0,self.ProcActualTableWidget.columnCount()-1).setTextAlignment(Qt.AlignCenter)
+			self.ProcActualTableWidget.item(1,self.ProcActualTableWidget.columnCount()-1).setTextAlignment(Qt.AlignCenter)
+
+	def agregar_proceso(self):
+		if (self.verificar_rafagas()):
+			# crear items
+			id_proc = QTableWidgetItem(str(self.IdProcSpinBox.value()))
+			id_proc.setTextAlignment(Qt.AlignCenter)
+
+			# control id de procesos, para que no haya repetidos 
+			idp = str(self.IdProcSpinBox.value())
+
+			existe = False
+
+			for i in range(self.ListProcCargTableWidget.rowCount()):
+
+				aux = self.ListProcCargTableWidget.item(i,0).text()
+				if ' ' in aux:
+					aux = aux.replace(' ', '')
+
+				if aux == idp:
+					existe = True
+					self.IdProcSpinBox.setStyleSheet("background-color: rgb(255,0,0);")
+
+			arribo = QTableWidgetItem(str(self.TASpinBox.value()))
+			arribo.setTextAlignment(Qt.AlignCenter)
+
+			# control de tamaño de proceso
+			tam = self.TamProcSpinBox.value()
+			# si se trata de particiones fijas
+			if self.FijasRadioButton.isChecked():
+				f = self.ParticionesTableWidget.rowCount()
+				part_tam_max = 0
+				# buscamos el tamaño maximo
+				for i in range(f):
+					if part_tam_max < int(self.ParticionesTableWidget.item(i,1).text()):
+						part_tam_max = int(self.ParticionesTableWidget.item(i,1).text())
+				if part_tam_max >= tam:
+					tam = QTableWidgetItem(str(self.TamProcSpinBox.value()))
+					tam.setTextAlignment(Qt.AlignCenter)
+					entra = True
+				else:
+					entra = False
+					self.TamProcSpinBox.setStyleSheet("background-color: rgb(255,0,0);") # rojo
+			# si se trata de particiones variables
+			else:
+				# vemos si entra en la memoria disponible
+				mem_disp = self.TamMemSpinBox.value() - int((self.TamMemSpinBox.value()) * (self.TamSoSpinBox.value())/100)
+				if mem_disp >= tam:
+					entra = True
+					tam = QTableWidgetItem(str(self.TamProcSpinBox.value()))
+					tam.setTextAlignment(Qt.AlignCenter)
+				else:
+					entra = False
+					self.TamProcSpinBox.setStyleSheet("background-color: rgb(255,0,0);")
+
+			# control de prioridad
+			if self.ColaRandomButton.isChecked():
+				arreglo_prior = ['B', 'M', 'A']
+				prioridad = arreglo_prior[random.randint(0,2)]
+			else:
+				if self.PrioridadComboBox.currentIndex() == 0:
+					prioridad = 'B'
+				if self.PrioridadComboBox.currentIndex() == 1:
+					prioridad = 'M'
+				if self.PrioridadComboBox.currentIndex() == 2:
+					prioridad = 'A'
+			prioridad_item = QTableWidgetItem(prioridad)
+			prioridad_item.setTextAlignment(Qt.AlignCenter)
+			rafaga = ''
+			nc = self.ProcActualTableWidget.columnCount()
+			for i in range(nc):
+				rafaga = rafaga + self.ProcActualTableWidget.item(0,i).text() + ': ' + self.ProcActualTableWidget.item(1,i).text() + '; '
+			raf_item = QTableWidgetItem(rafaga)
+
+			if entra and not existe:
+				self.ListProcCargTableWidget.setRowCount(self.ListProcCargTableWidget.rowCount()+1)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1, 0, id_proc)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1, 1, tam)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1, 2, arribo)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1, 3, prioridad_item)
+				self.ListProcCargTableWidget.setItem(self.ListProcCargTableWidget.rowCount()-1, 4, raf_item)
+				# para mas comidad, pone el supuesto siguiente id a cargar 
+				self.IdProcSpinBox.setValue(self.ListProcCargTableWidget.rowCount()+1)
+				self.TamProcSpinBox.setValue(1)
+				self.TASpinBox.setValue(0)
+				i = 1 # siempre dejamos una columna para la cpu 
+				while (self.ProcActualTableWidget.columnCount()) > 1:
+					self.ProcActualTableWidget.removeColumn(i)
+				self.ProcActualTableWidget.item(1,0).setText('0')
+				# al igual que con las particiones y la memoria 
+				# una vez que carguemos un proceso, no se podran volver a modificar algunas configuraciones
+				self.EntradaIzqGroupBox.setEnabled(False)
+				self.TamProcSpinBox.setStyleSheet("background-color: rgb(255,255,255);")
+				self.IdProcSpinBox.setStyleSheet("background-color: rgb(255,255,255);")
+						
+	def verificar_rafagas(self):
+		# ProcActualTableWidget es donde se cargan las rafagas 
+		nc = self.ProcActualTableWidget.columnCount()
+		for i in range(nc):
+			if (self.ProcActualTableWidget.item(1,i) == None or int(self.ProcActualTableWidget.item(1,i).text()) == 0):
+			# if int(self.ProcActualTableWidget.item(1,i).text()) == 0:
+				self.ProcActualTableWidget.item(1,i).setBackground(QColor("#FF0000"))
+				return False
+		self.limpiar_tabla_ragafas()
+		return True
+
+	# por si previamente cargaste mal, entonces no te aparece en rojo
+	def limpiar_tabla_ragafas(self):
+		nc = self.ProcActualTableWidget.columnCount()
+		for i in range(nc):
+			self.ProcActualTableWidget.item(1,i).setBackground(QColor("#FFFFFF")) 
+
+	# control de la tabla de particiones
+	def control_particiones(self):
+		if self.FijasRadioButton.isChecked():
+			if self.ParticionesTableWidget.rowCount() > 0:
+				return True
+			else:
+				return False 
+		else:
+			# particiones variables
+			return True
+
+	# control de la tabla de procesos
+	def control_procesos(self):
+		if self.ProcActualTableWidget.rowCount() > 0:
+			return True
+		else:
+			return False
+
+	# dicho metodo lleva a cabo la planificacion
+	# metodo planficar de la clase ventana (o Ui)
+	def planificar(self):
+
+		self.INICIARPushButton.setEnabled(False)
+		# este metodo lo que hace es "preparar" todos los parametros necesarios para 
+		# instanciar una clase planificador y llevar a cabo dicha planificacion.
+		if self.control_particiones() and self.control_procesos():
+
+			if self.AlgortimoComboBox.currentIndex() == 0:
+				alg = 'fcfs'
+			if self.AlgortimoComboBox.currentIndex() == 1:
+				alg = 'pri'
+			if self.AlgortimoComboBox.currentIndex() == 2:
+				alg = 'mlq'
+			if self.AlgortimoComboBox.currentIndex() == 3:
+				alg = 'rrq'
+				q = self.QuantumSpinBox.value()
+			if self.AlgortimoComboBox.currentIndex() == 4:
+				alg = 'sjf'
+
+			# tupla de los procesos con todos su datos
+			nuevo_proceso = list()
+			for i in range(self.ListProcCargTableWidget.rowCount()):
+				p = int(self.ListProcCargTableWidget.item(i,0).text())
+				tam = int(self.ListProcCargTableWidget.item(i,1).text())
+				a = int(self.ListProcCargTableWidget.item(i,2).text())
+				pri = self.ListProcCargTableWidget.item(i,3).text()
+				raf = self.ListProcCargTableWidget.item(i,4).text()
+				# se agrega a la lista una nueva instancia de proceso
+
+				if ' ' in pri:
+					pri = pri.replace(' ', '')
+				nuevo_proceso.append(proceso(p, tam, a, pri, raf))
+
+			# metodo de asignacion (mayusculas!)
+			if self.FirstRadioButton.isChecked():
+				metodo_asignacion = 'FF'
+			elif self.BestRadioButton.isChecked():
+				metodo_asignacion = 'BF'
+			else:
+				metodo_asignacion = 'WF'
+
+			# debemos instanciar el tipo de memoria seleccionada
+			# particionado de la memoria
+			if self.FijasRadioButton.isChecked():
+
+				tm = (self.TamMemSpinBox.value()) - int((self.TamMemSpinBox.value() * (self.TamSoSpinBox.value())/100))
+				# instancio un objeto memoria fija
+				memoria = memoria_fija(tm, metodo_asignacion)
+
+				# hacemos la lista de particiones
+				for j in range(self.ParticionesTableWidget.rowCount()):
+					id_part = int(self.ParticionesTableWidget.item(j,0).text())
+					tam_part = int(self.ParticionesTableWidget.item(j,1).text())
+					memoria.particiones.append(particion(id_part, tam_part))
+
+			else:
+				tm = (self.TamMemSpinBox.value()) - int((self.TamMemSpinBox.value() * (self.TamSoSpinBox.value())/100))
+				# instanciamos un objeto memoria variable
+				memoria = memoria_variable(tm, metodo_asignacion)
+				# obviamente no hacemos la lista de particiones todavia
+
+			self.historial_particiones = list()
+			# ya esta todo listo para llevar acabo la planificacion
+			plan = planificador(alg, nuevo_proceso, memoria, self.QuantumSpinBox.value())
+
+			resultado = plan.planificar() # metodo planificar de la clase planificador (NO DE VENTANA !)
+
+			self.imprimir_resultado(resultado[0])
+			plan.promediar_tiempos()
+			self.imprimir_promedios(plan.retardo_prom, plan.espera_prom)
+			self.datos = plan.datos_proceso
+			self.SegundoSpinBox.setEnabled(True)
+			self.SegundoSpinBox.setMaximum(len(self.datos) - 1)
+
+			self.resultadosPorTiempo()
+			self.gantt=resultado[1]
+
+			self.historial_particiones = resultado[2]
+
+	def imprimir_resultado(self, texto):
+		self.HistPlanifTextEdit.setText(texto)
+
+
+	def imprimir_promedios(self, retorno, espera):
+		self.ValorRetornoLabel.setText(str(retorno))
+		self.ValorEsperaLabel.setText(str(espera))
+
+	def graficar_gantt(self):
+		self.gantt.show()
+
+	def resultadosPorTiempo(self):
+
+		cola_cpu=str(self.datos[self.SegundoSpinBox.value()][0]).replace('[','').replace(']','')
+		self.label_21.setText(cola_cpu)
+
+		cola_entrada = str(self.datos[self.SegundoSpinBox.value()][1]).replace('[','').replace(']','')
+		self.label_26.setText(cola_entrada)
+
+		cola_salida=str(self.datos[self.SegundoSpinBox.value()][2]).replace('[','').replace(']','')
+		self.label_27.setText(cola_salida)
+
+		enCpu = str(self.datos[self.SegundoSpinBox.value()][4]).replace('[','').replace(']','')
+		self.idEnCpuLabel.setText(enCpu)
+
+		particiones = ''
+
+		historial = self.historial_particiones
+
+		for i in historial:
+			if i[0] == self.SegundoSpinBox.value() and i[2] != 0:
+				particiones = particiones + 'Part: ' + str(i[1]) + ' con Proc: ' + str(i[2]) + '\n'
+
+		self.PartOcupTextEdit.setText(particiones)
+		self.PartOcupTextEdit.setStyleSheet('text-align: center')
+
+	def mostrarMapaMemoria(self):
+		tiempo = self.SegundoSpinBox.value()
+
+		historial = self.historial_particiones
+		# 0 = tiempo, 1 = particion, 2 = proceso, 3 = tam particion
+
+		espacioSo = int( (self.TamMemSpinBox.value()) * ( (self.TamSoSpinBox.value()) / 100 ))
+
+		colores = ("red", "orange", "yellow", "green", "lightblue", "blue", "purple")
+		ix_color = 0
+
+		plt.rcdefaults()
+		fig, ax = plt.subplots()
+
+		# 1er par: posicion en y
+		# 2do par: tamaño en x 
+		# 3er par: tamaño en y
+		# 4to par: desde donde empieza en x 
+		
+		# Sistema operativo
+		ax.barh(1, espacioSo, 1, 0, color = "black")
+		plt.plot(0,0,color = "black",label="Particion SO")		
+
+		# Demas particiones
+		desde = espacioSo 
+		for i in historial:
+
+			if i[0] == tiempo:
+
+				if ix_color == len(colores):
+					ix_color = 0
+
+				# si no hay proceso, muestra en gris
+				if i[2] == 0:
+					ax.barh(1, i[3] , 1, desde, color = "gray")
+					plt.plot(0,0,color = "gray" ,label= 'Particion ' + str(i[1]) + ' sin proceso asignado')
+					desde = desde + i[3]
+					ix_color = ix_color + 1 
+
+				else:
+					ax.barh(1, i[3] , 1, desde, color = colores[ix_color])
+					plt.plot(0,0,color = colores[ix_color] ,label= 'Particion ' + str(i[1]) + ' con Proceso ' + str(i[2]) )
+					desde = desde + i[3]
+					ix_color = ix_color + 1 				
+
+		ax.set_xlabel('Tamaño de la Memoria')
+
+		ax.set_title('Diagrama de Memoria en el tiempo: '+ str(tiempo) + 'sg')
+
+		plt.legend()
+		plt.show()
+
+# ---------------------------------------------------- PLANIFICADOR ----------------------------------------------------
+# recibe todos los parametros del metodo planificar de la clase ventana
+# y luego ejecuta su propio metodo planificar
+class planificador:
+	def __init__(self, alg, proc, mem, q):
+		self.algoritmo = alg
+		self.proceso = proc # lista de procesos con sus caracteristicas
+		self.memoria = mem # objeto memoria, con aloritmo de asignacion como atributo
+		self.quantum = q
+
+		self.cola = list() # general
+
+		self.quantum = ''
+		if self.algoritmo == 'rrq':
+			self.quantum = q
+
+		self.interrupcion = False
+
+		self.cpu = list() # proceso que se esta ejecutando actualmente
+
+		# self.eys = list() #
+		self.ent = list()
+		self.sal = list()
+		self.cola_bloq_e = list()
+		self.cola_bloq_s = list() 
+		self.cola_listos = list()
+
+		self.gantt_cpu = list()
+		self.gantt_entrada = list()
+		self.gantt_salida = list()
+
+		self.datos_proceso = list()
+		self.retardo_prom = 0
+		self.espera_prom = 0
+
+		# self.ordenar_procesos()
+		self.hist_part = list()
+
+	def ordenar_procesos(self):
+		# ordena los procesos de la cola general por tiempo de arribo
+		procesos_ordenados = list()
+		# proceso es una lista de objetos proceso (con sus caracteristicas)
+		while (len(self.proceso) > 0):
+			tmin = self.proceso[0].arribo
+			p = self.proceso[0]
+
+			for proc in self.proceso:
+				if (proc.arribo < tmin):
+					# busco el menor tiempo existente
+					tmin = proc.arribo
+					p = proc
+			# agregamos el proceso restante con el menor tiempo a la nueva lista ordenada
+			procesos_ordenados.append(p)
+			# sacamos dicho proceso de la lista desordenada
+			self.proceso.remove(p)
+		# reemplazamos la lista desordenada por la ordenada
+		self.proceso = procesos_ordenados
+
+
+	# def ordenar_procesos_por_prioridad(self):
+	# 	for i in self.proceso:
+	# 		if ' ' in i.prioridad:
+	# 			i.prioridad = i.prioridad.replace(' ', '')
+
+	# 		if i.prioridad == 'B':
+	# 			i.prioridad = 2
+	# 		if i.prioridad == 'M':
+	# 			i.prioridad = 1
+	# 		if i.prioridad == 'A':
+	# 			i.prioridad = 0
+
+	# 	(self.proceso).sort(key = lambda proceso: int(proceso.prioridad))
+
+
+
+	# metodo planificar de la clase planificador (NO DE LA CLASE VENTANA!)
+	def planificar(self):
+
+		# inicializar gantt se puede hacer fuera de los condicionales
+		plt.title('Diagrama de Gantt',size=15)
+		plt.xlabel('Tiempo',size=10)
+		plt.ylabel('Procesos',size=10)
+
+		plt.plot([0,0],[0,0], marker="^", ls="dashed", color="lime", mec="black", ms=10, alpha=1.0 ,label="Arribo del proceso")
+		plt.plot([0,0],[0,0], marker="v", ls="dashed", color="red", mec="black", ms=10, alpha=1.0 ,label="Fin del proceso")
+		plt.plot([0,0],[0,0], marker="^", ls="dashed", color="white",ms=10,alpha=1.0)
+		plt.plot([0,0],[0,0], marker="v", ls="dashed", color="white",ms=10,alpha=1.0)
+		plt.plot([0,0],[0,0], ls="solid", color="blue", mec="black", ms=10, alpha=1.0 ,lw = 4,label="En CPU")
+		plt.plot([0,0],[0,0], ls="solid", color="orangered", mec="black", ms=10, alpha=1.0 ,lw = 4,label="Entrada")
+		plt.plot([0,0],[0,0], ls="solid", color="darkgreen", mec="black", ms=10, alpha=1.0 ,lw = 4,label="Salida")
+		plt.plot([0,0],[0,0], ls="dashed", color="gray", mec="black", ms=10, alpha=1.0 ,lw = 1,label="En cola de Listos")
+
+		# --------------------------------------------------------- FIRST COME FIRST SERVED ---------------------------------------------------------
+
+		if self.algoritmo == 'fcfs':
+			self.ordenar_procesos()
+
+			t = 0 
+			salida = False
+			# historial de planificacion
+			resultado = ''
+			# mientras tengamos procesos por ejecutar y no sea el fin 
+
+			# historial de particiones
+			# [ [tiempo1, particion1, proceso1] , [tiempo1, particion2, proceso2], etc]
+		
+
+			while len(self.proceso) > 0 or not salida:
+				resultado = resultado + 'Tiempo: ' + str(t) + '\n'
+				# print('tiempo actual', t)
+				self.agregarCola(t)
+
+				# intento de memoria
+				self.agregarHistorialParticiones(t)
+
+				# -------- ELECCION DEL PROXIMO PROCESO A EJECUTARSE EN CADA RECURSO --------
+
+				aux_listos = ''
+				for k in range( len(self.cola_listos)):
+					aux_listos = aux_listos + str(self.cola_listos[k][0]) + ', '
+
+				resultado = resultado + '->Cola de Listos: ' + aux_listos + '\n'
+				# resultado = resultado + '->Cola de Listos' + str(self.cola_listos) + '\n'
+				# si no hay procesos ejecutandose o hay una interrupcion
+				if ( len(self.cpu) == 0 or self.interrupcion):
+					if self.interrupcion:
+						resultado=resultado+'#P!'+'\n'
+						self.guardar_pcb()
+						self.interrupcion = False
+
+					# if len(self.cpu) > 0:
+					if len(self.cola_listos) > 0:
+						p = self.cola_listos[0]
+						self.cpu = [p[0], p[1]]
+					else:
+						self.gantt_cpu.append([t,0])
+
+				aux_bloq_e = ''
+				for k in range( len(self.cola_bloq_e)):
+					aux_bloq_e = aux_bloq_e + str(self.cola_bloq_e[k][0]) + ', '
+
+				resultado = resultado + '->Cola bloq x Ent: ' + aux_bloq_e + '\n'
+				if len(self.ent) == 0:
+					if len(self.cola_bloq_e) > 0:
+						self.elegir_proc_cb('e')
+					else:
+						self.gantt_entrada.append([t,0])
+
+				aux_bloq_s = ''
+				for k in range( len(self.cola_bloq_s)):
+					aux_bloq_s = aux_bloq_s + str(self.cola_bloq_s[k][0]) + ', '				
+
+				resultado = resultado + '->Cola bloq x Sal: ' + aux_bloq_s + '\n'
+				if len(self.sal) == 0:
+					if len(self.cola_bloq_s) > 0:
+						self.elegir_proc_cb('s')
+					else:
+						self.gantt_salida.append([t,0])
+
+				self.guardar_datos()
+
+				# -------- CONTROL DE FIN DE RAFAGAS DEL PROCESO EN CADA RECURSO --------
+
+				resultado = resultado + 'CPU: ' + str(self.cpu) + '\n'
+
+				if len(self.cpu) > 0:
+					plt.plot([t, t+1], [self.cpu[0], self.cpu[0]], ls="solid", color="blue", mec="black", ms=10, alpha=1.0 ,lw = 4)
+					self.cpu[1] = (self.cpu[1]) - 1 # descuenta 
+					self.gantt_cpu.append([t,self.cpu[0]])
+					if self.cpu[1] < 1:
+						quantum = self.quantum
+						self.fin_rafaga(self.cpu,'cpu', t)
+						self.terminar_proceso(t+1)
+						self.cpu.clear()
+							
+				resultado = resultado + 'Entrada: ' + str(self.ent) + '\n'
+				if len(self.ent) > 0:
+					plt.plot([t, t+1], [self.ent[0], self.ent[0]], color = 'chocolate', lw = 4)
+					self.ent[1] = (self.ent[1]) - 1
+					self.gantt_entrada.append([t, self.ent[0]])
+					if self.ent[1] < 1:
+						self.fin_rafaga(self.ent, 'e', t)
+						self.ent.clear()
+
+				resultado = resultado + 'Salida: ' + str(self.sal) + '\n'
+				if len(self.sal) > 0:
+					plt.plot([t, t+1], [self.sal[0], self.sal[0]], color = 'forestgreen', lw = 4)
+					self.sal[1] = (self.sal[1]) - 1
+					self.gantt_salida.append([t, self.sal[0]])
+					if self.sal[1] < 1:
+						self.fin_rafaga(self.sal, 's', t)
+						self.sal.clear()
+
+				salida = True
+				for i in self.cola:
+					if i.t_fin == 0:
+						salida = False
+						break
+
+				resultado = resultado + '_______________________' + '\n'
+
+				if len(self.cola_listos) > 0:
+					for j in range(len(self.cola_listos)):
+						# ACA HAY UN PROBLEMA
+						plt.plot([t, t+1], [self.cola_listos[j][0], self.cola_listos[j][0]], ls="dashed", color = 'gray', lw = 2, alpha = 0.75)
+
+				if len(self.cola_bloq_e) > 0:
+					for j in range(len(self.cola_bloq_e)):
+						plt.plot([t, t+1], [self.cola_bloq_e[j][0], self.cola_bloq_e[j][0]], ":", color="chocolate", lw=2, alpha=0.75)
+
+				if len(self.cola_bloq_s)>0:
+					for j in range(len(self.cola_bloq_s)):
+						plt.plot([t, t+1], [self.cola_bloq_s[j][0], self.cola_bloq_s[j][0]], ":", color="forestgreen", lw=2, alpha=0.75)
+
+				t = t + 1
+
+			resultado=resultado+'Tiempo: '+str(t)+'\n'+'->Cola listos: '+str(self.cola_listos)+'\n'+'CPU: '+str(self.cpu)+'\n'+'->Cola bloq p/E:'+str(self.cola_bloq_e)+'\n'+'Entrada: '+str(self.ent)+'\n'+'->Cola bloq p/S:'+str(self.cola_bloq_s)+'\n'+'Salida: '+str(self.sal)+'\n'
+			resultado=resultado+'___________________________'+'\n'
+			self.guardar_datos()
+			
+			plt.legend()
+			
+			return[resultado, plt, self.hist_part]
+
+
+		# --------------------------------------------------------- PRIORIDADES ---------------------------------------------------------
+		if self.algoritmo == 'pri':
+
+			t = 0 
+			salida = False
+			# historial de planificacion
+			resultado = ''
+			# mientras tengamos procesos por ejecutar y no sea el fin 
+			while len(self.proceso) > 0 or not salida:
+				resultado = resultado + 'Tiempo: ' + str(t) + '\n'
+				# print('tiempo actual', t)
+				self.agregarCola(t) # por tiempo
+
+				self.agregarHistorialParticiones(t)
+
+				# -------- ELECCION DEL PROXIMO PROCESO A EJECUTARSE EN CADA RECURSO --------
+
+				aux_listos = ''
+				for k in range(len(self.cola_listos)):
+					aux_listos = aux_listos + str(self.cola_listos[k][0]) + ', '
+
+				resultado = resultado + '->Cola de Listos: ' + aux_listos + '\n'
+
+				# si no hay procesos ejecutandose o hay una interrupcion
+				if ( len(self.cpu) == 0 or self.interrupcion):
+					if self.interrupcion:
+						resultado=resultado+'#P!'+'\n'
+						self.guardar_pcb()
+						self.interrupcion = False
+
+					# if len(self.cpu) > 0:
+					if len(self.cola_listos) > 0:
+						# self.elegir_proc_cl(self.alg)
+
+						# ordenamos los procesos por prioridad, para ello cambiamos las letras a numeros
+						cl_ordenada = list()
+
+						for i in self.cola_listos:
+
+							if i[2] == 'B':
+								x = 2
+							if i[2] == 'M':
+								x = 1
+							if i[2] == 'A':
+								x = 0
+							cl_ordenada.append([i[0],i[1], x])
+
+						# ordenamos primero por prioridad y luego por tiempo de arribo
+						cl_ordenada.sort(key = lambda cl_ordenada: (cl_ordenada[2], cl_ordenada[1]))
+						self.cola_listos = cl_ordenada
+						# asi, al momento de elegir el proceso, se elige el primer de la cola 
+						p = self.cola_listos[0]
+						self.cpu = [p[0], p[1]]
+
+					else:
+						self.gantt_cpu.append([t,0])
+
+				aux_bloq_e = ''
+				for k in range( len(self.cola_bloq_e)):
+					aux_bloq_e = aux_bloq_e + str(self.cola_bloq_e[k][0]) + ', '
+
+				resultado = resultado + '->Cola bloq x Ent: ' + aux_bloq_e + '\n'
+				if len(self.ent) == 0:
+					if len(self.cola_bloq_e) > 0:
+						self.elegir_proc_cb('e')
+					else:
+						self.gantt_entrada.append([t,0])
+
+				aux_bloq_s = ''
+				for k in range( len(self.cola_bloq_s)):
+					aux_bloq_s = aux_bloq_s + str(self.cola_bloq_s[k][0]) + ', '				
+
+				resultado = resultado + '->Cola bloq x Sal: ' + aux_bloq_s + '\n'
+				if len(self.sal) == 0:
+					if len(self.cola_bloq_s) > 0:
+						self.elegir_proc_cb('s')
+					else:
+						self.gantt_salida.append([t,0])
+
+				self.guardar_datos()
+
+				# -------- CONTROL DE FIN DE RAFAGAS DEL PROCESO EN CADA RECURSO --------
+
+				resultado = resultado + 'CPU: ' + str(self.cpu) + '\n'
+
+				if len(self.cpu) > 0:
+					# plt.plot([t, t+1], [self.cpu[0], self.cpu[0]], color = 'green', lw= 4) # controlar color
+					plt.plot([t, t+1], [self.cpu[0], self.cpu[0]], ls="solid", color="blue", mec="black", ms=10, alpha=1.0 ,lw = 4)
+					self.cpu[1] = (self.cpu[1]) - 1 # descuenta 
+					self.gantt_cpu.append([t,self.cpu[0]])
+					if self.cpu[1] < 1:
+						self.fin_rafaga(self.cpu,'cpu', t)
+						self.terminar_proceso(t+1)
+						self.cpu.clear()
+							
+				resultado = resultado + 'Entrada: ' + str(self.ent) + '\n'
+				if len(self.ent) > 0:
+					plt.plot([t, t+1], [self.ent[0], self.ent[0]], color = 'chocolate', lw = 4)
+					self.ent[1] = (self.ent[1]) - 1
+					self.gantt_entrada.append([t, self.ent[0]])
+					if self.ent[1] < 1:
+						self.fin_rafaga(self.ent, 'e', t)
+						self.ent.clear()
+
+				resultado = resultado + 'Salida: ' + str(self.sal) + '\n'
+				if len(self.sal) > 0:
+					plt.plot([t, t+1], [self.sal[0], self.sal[0]], color = 'forestgreen', lw = 4)
+					self.sal[1] = (self.sal[1]) - 1
+					self.gantt_salida.append([t, self.sal[0]])
+					if self.sal[1] < 1:
+						self.fin_rafaga(self.sal, 's', t)
+						self.sal.clear()
+
+				salida = True
+				for i in self.cola:
+					if i.t_fin == 0:
+						salida = False
+						break
+
+				# for j in range(0,len(self.memoria.particiones)):
+				# 	self.memoria.particiones[j].imprimir_particion()
+
+				resultado = resultado + '_______________________' + '\n'
+
+				if len(self.cola_listos) > 0:
+					for j in range(len(self.cola_listos)):
+						# ACA HAY UN PROBLEMA
+						plt.plot([t, t+1], [self.cola_listos[j][0], self.cola_listos[j][0]], ls="dashed", color = 'gray', lw = 2, alpha = 0.75)
+
+				if len(self.cola_bloq_e) > 0:
+					for j in range(len(self.cola_bloq_e)):
+						plt.plot([t, t+1], [self.cola_bloq_e[j][0], self.cola_bloq_e[j][0]], ":", color="chocolate", lw=2, alpha=0.75)
+
+				if len(self.cola_bloq_s)>0:
+					for j in range(len(self.cola_bloq_s)):
+						plt.plot([t, t+1], [self.cola_bloq_s[j][0], self.cola_bloq_s[j][0]], ":", color="forestgreen", lw=2, alpha=0.75)
+
+				t = t + 1
+
+			resultado=resultado+'Tiempo: '+str(t)+'\n'+'->Cola listos: '+str(self.cola_listos)+'\n'+'CPU: '+str(self.cpu)+'\n'+'->Cola bloq p/E:'+str(self.cola_bloq_e)+'\n'+'Entrada: '+str(self.ent)+'\n'+'->Cola bloq p/S:'+str(self.cola_bloq_s)+'\n'+'Salida: '+str(self.sal)+'\n'
+			resultado=resultado+'___________________________'+'\n'
+			self.guardar_datos()
+			
+			plt.legend()
+			
+			return[resultado, plt, self.hist_part]
+
+		# ------------------------------------------ COLAS MULTINIVEL ------------------------------------------
+
+
+
+
+		# ------------------------------------------ ROUND-ROBIN ------------------------------------------
+		if self.algoritmo == 'rrq':
+
+			self.ordenar_procesos()
+
+			t = 0 
+
+			quantum = int(self.quantum)
+			salida = False
+			# historial de planificacion
+			resultado = ''
+			# mientras tengamos procesos por ejecutar y no sea el fin 
+
+			# historial de particiones
+			# [ [tiempo1, particion1, proceso1] , [tiempo1, particion2, proceso2], etc]
+
+			while len(self.proceso) > 0 or not salida:
+				resultado = resultado + 'Tiempo: ' + str(t) + '\n'
+
+				self.agregarCola(t)
+
+				self.agregarHistorialParticiones(t)
+
+				# -------- ELECCION DEL PROXIMO PROCESO A EJECUTARSE EN CADA RECURSO --------
+
+				aux_listos = ''
+				for k in range( len(self.cola_listos)):
+					aux_listos = aux_listos + str(self.cola_listos[k][0]) + ', '
+
+				resultado = resultado + '->Cola de Listos: ' + aux_listos + '\n'
+
+				if ( len(self.cpu) == 0 or self.interrupcion or quantum == 0 ):
+
+					if quantum == 0 or self.interrupcion:
+
+						if quantum == 0:
+							quantum = self.quantum
+							# resultado=resultado+'#Q!'+'\n'
+							if (len(self.cpu) != 0):
+								self.guardar_pcb()
+
+						if self.interrupcion:
+							# resultado=resultado+'#P!'+'\n'
+							self.guardar_pcb()
+							self.interrupcion = False
+
+					if len(self.cola_listos) > 0:
+						p = self.cola_listos[0]
+						self.cpu = [p[0], p[1]]
+					else:
+						self.gantt_cpu.append([t,0])
+
+				aux_bloq_e = ''
+				for k in range( len(self.cola_bloq_e)):
+					aux_bloq_e = aux_bloq_e + str(self.cola_bloq_e[k][0]) + ', '
+
+				resultado = resultado + '->Cola bloq x Ent: ' + aux_bloq_e + '\n'
+				if len(self.ent) == 0:
+					if len(self.cola_bloq_e) > 0:
+						self.elegir_proc_cb('e')
+					else:
+						self.gantt_entrada.append([t,0])
+
+				aux_bloq_s = ''
+				for k in range( len(self.cola_bloq_s)):
+					aux_bloq_s = aux_bloq_s + str(self.cola_bloq_s[k][0]) + ', '				
+
+				resultado = resultado + '->Cola bloq x Sal: ' + aux_bloq_s + '\n'
+				if len(self.sal) == 0:
+					if len(self.cola_bloq_s) > 0:
+						self.elegir_proc_cb('s')
+					else:
+						self.gantt_salida.append([t,0])
+
+				self.guardar_datos()
+
+				# -------- CONTROL DE FIN DE RAFAGAS DEL PROCESO EN CADA RECURSO --------
+
+				resultado = resultado + 'CPU: ' + str(self.cpu) + '\n'
+
+				if len(self.cpu) > 0:
+					# plt.plot([t, t+1], [self.cpu[0], self.cpu[0]], color = 'green', lw= 4) # controlar color
+					plt.plot([t, t+1], [self.cpu[0], self.cpu[0]], ls="solid", color="blue", mec="black", ms=10, alpha=1.0 ,lw = 4)
+					# como es rrq
+					quantum = quantum - 1
+					self.cpu[1] = (self.cpu[1]) - 1 # descuenta el tiempo que le falta para terminar de ejecutarse 
+					self.gantt_cpu.append([t,self.cpu[0]])
+					if self.cpu[1] < 1:
+						self.fin_rafaga(self.cpu,'cpu', t)
+						self.terminar_proceso(t+1)
+						self.cpu.clear()
+							
+				resultado = resultado + 'Entrada: ' + str(self.ent) + '\n'
+				if len(self.ent) > 0:
+					plt.plot([t, t+1], [self.ent[0], self.ent[0]], color = 'chocolate', lw = 4)
+					self.ent[1] = (self.ent[1]) - 1
+					self.gantt_entrada.append([t, self.ent[0]])
+					if self.ent[1] < 1:
+						self.fin_rafaga(self.ent, 'e', t)
+						self.ent.clear()
+
+				resultado = resultado + 'Salida: ' + str(self.sal) + '\n'
+				if len(self.sal) > 0:
+					plt.plot([t, t+1], [self.sal[0], self.sal[0]], color = 'forestgreen', lw = 4)
+					self.sal[1] = (self.sal[1]) - 1
+					self.gantt_salida.append([t, self.sal[0]])
+					if self.sal[1] < 1:
+						self.fin_rafaga(self.sal, 's', t)
+						self.sal.clear()
+
+				salida = True
+				for i in self.cola:
+					if i.t_fin == 0:
+						salida = False
+						break
+
+				resultado = resultado + '_______________________' + '\n'
+
+				if len(self.cola_listos) > 0:
+					for j in range(len(self.cola_listos)):
+						# ACA HAY UN PROBLEMA
+						plt.plot([t, t+1], [self.cola_listos[j][0], self.cola_listos[j][0]], ls="dashed", color = 'gray', lw = 2, alpha = 0.75)
+
+				if len(self.cola_bloq_e) > 0:
+					for j in range(len(self.cola_bloq_e)):
+						plt.plot([t, t+1], [self.cola_bloq_e[j][0], self.cola_bloq_e[j][0]], ":", color="chocolate", lw=2, alpha=0.75)
+
+				if len(self.cola_bloq_s)>0:
+					for j in range(len(self.cola_bloq_s)):
+						plt.plot([t, t+1], [self.cola_bloq_s[j][0], self.cola_bloq_s[j][0]], ":", color="forestgreen", lw=2, alpha=0.75)
+
+				t = t + 1
+
+			resultado=resultado+'Tiempo: '+str(t)+'\n'+'->Cola listos: '+str(self.cola_listos)+'\n'+'CPU: '+str(self.cpu)+'\n'+'->Cola bloq p/E:'+str(self.cola_bloq_e)+'\n'+'Entrada: '+str(self.ent)+'\n'+'->Cola bloq p/S:'+str(self.cola_bloq_s)+'\n'+'Salida: '+str(self.sal)+'\n'
+			resultado=resultado+'___________________________'+'\n'
+			self.guardar_datos()
+			
+			plt.legend()
+			
+			return[resultado, plt, self.hist_part]
+
+		# ------------------------------------------ SHORT JOB FIRST ------------------------------------------
+		if self.algoritmo == 'sjf':
+
+			t = 0 
+			salida = False
+			# historial de planificacion
+			resultado = ''
+			# mientras tengamos procesos por ejecutar y no sea el fin 
+
+			# historial de particiones
+			# [ [tiempo1, particion1, proceso1] , [tiempo1, particion2, proceso2], etc]
+			
+			while len(self.proceso) > 0 or not salida:
+				resultado = resultado + 'Tiempo: ' + str(t) + '\n'
+				self.agregarCola(t)
+
+				self.agregarHistorialParticiones(t)
+
+				# -------- ELECCION DEL PROXIMO PROCESO A EJECUTARSE EN CADA RECURSO --------
+
+				aux_listos = ''
+				for k in range( len(self.cola_listos)):
+					aux_listos = aux_listos + str(self.cola_listos[k][0]) + ', '
+
+				resultado = resultado + '->Cola de Listos: ' + aux_listos + '\n'
+				# si no hay procesos ejecutandose o hay una interrupcion
+				if ( len(self.cpu) == 0 or self.interrupcion):
+					if self.interrupcion:
+						resultado=resultado+'#P!'+'\n'
+						self.guardar_pcb()
+						self.interrupcion = False
+
+					# if len(self.cpu) > 0:
+					if len(self.cola_listos) > 0:
+
+						# SOLO EN ALGORITMO SJF
+						# ordenamos los procesos por tiempo de uso
+						cl_ordenada = list()
+
+						cl_ordenada = self.cola_listos
+
+						# ordenamos primero por tiempo de uso y luego por tiempo de arribo
+						cl_ordenada.sort(key = lambda cl_ordenada: (cl_ordenada[2], cl_ordenada[1]))
+						self.cola_listos = cl_ordenada
+
+						# asi, al momento de elegir el proceso, se elige el primero de la cola 
+
+						p = self.cola_listos[0]
+						self.cpu = [p[0], p[1]]
+					else:
+						self.gantt_cpu.append([t,0])
+
+				aux_bloq_e = ''
+				for k in range( len(self.cola_bloq_e)):
+					aux_bloq_e = aux_bloq_e + str(self.cola_bloq_e[k][0]) + ', '
+
+				resultado = resultado + '->Cola bloq x Ent: ' + aux_bloq_e + '\n'
+				if len(self.ent) == 0:
+					if len(self.cola_bloq_e) > 0:
+						self.elegir_proc_cb('e')
+					else:
+						self.gantt_entrada.append([t,0])
+
+				aux_bloq_s = ''
+				for k in range( len(self.cola_bloq_s)):
+					aux_bloq_s = aux_bloq_s + str(self.cola_bloq_s[k][0]) + ', '				
+
+				resultado = resultado + '->Cola bloq x Sal: ' + aux_bloq_s + '\n'
+				if len(self.sal) == 0:
+					if len(self.cola_bloq_s) > 0:
+						self.elegir_proc_cb('s')
+					else:
+						self.gantt_salida.append([t,0])
+
+				self.guardar_datos()
+
+				# -------- CONTROL DE FIN DE RAFAGAS DEL PROCESO EN CADA RECURSO --------
+
+				resultado = resultado + 'CPU: ' + str(self.cpu) + '\n'
+
+				if len(self.cpu) > 0:
+					plt.plot([t, t+1], [self.cpu[0], self.cpu[0]], ls="solid", color="blue", mec="black", ms=10, alpha=1.0 ,lw = 4)
+					self.cpu[1] = (self.cpu[1]) - 1 # descuenta 
+					self.gantt_cpu.append([t,self.cpu[0]])
+					if self.cpu[1] < 1:
+						quantum = self.quantum
+						self.fin_rafaga(self.cpu,'cpu', t)
+						self.terminar_proceso(t+1)
+						self.cpu.clear()
+							
+				resultado = resultado + 'Entrada: ' + str(self.ent) + '\n'
+				if len(self.ent) > 0:
+					plt.plot([t, t+1], [self.ent[0], self.ent[0]], color = 'chocolate', lw = 4)
+					self.ent[1] = (self.ent[1]) - 1
+					self.gantt_entrada.append([t, self.ent[0]])
+					if self.ent[1] < 1:
+						self.fin_rafaga(self.ent, 'e', t)
+						self.ent.clear()
+
+				resultado = resultado + 'Salida: ' + str(self.sal) + '\n'
+				if len(self.sal) > 0:
+					plt.plot([t, t+1], [self.sal[0], self.sal[0]], color = 'forestgreen', lw = 4)
+					self.sal[1] = (self.sal[1]) - 1
+					self.gantt_salida.append([t, self.sal[0]])
+					if self.sal[1] < 1:
+						self.fin_rafaga(self.sal, 's', t)
+						self.sal.clear()
+
+				salida = True
+				for i in self.cola:
+					if i.t_fin == 0:
+						salida = False
+						break
+
+				resultado = resultado + '_______________________' + '\n'
+
+				if len(self.cola_listos) > 0:
+					for j in range(len(self.cola_listos)):
+						# ACA HAY UN PROBLEMA
+						plt.plot([t, t+1], [self.cola_listos[j][0], self.cola_listos[j][0]], ls="dashed", color = 'gray', lw = 2, alpha = 0.75)
+
+				if len(self.cola_bloq_e) > 0:
+					for j in range(len(self.cola_bloq_e)):
+						plt.plot([t, t+1], [self.cola_bloq_e[j][0], self.cola_bloq_e[j][0]], ":", color="chocolate", lw=2, alpha=0.75)
+
+				if len(self.cola_bloq_s)>0:
+					for j in range(len(self.cola_bloq_s)):
+						plt.plot([t, t+1], [self.cola_bloq_s[j][0], self.cola_bloq_s[j][0]], ":", color="forestgreen", lw=2, alpha=0.75)
+
+				t = t + 1
+
+			resultado=resultado+'Tiempo: '+str(t)+'\n'+'->Cola listos: '+str(self.cola_listos)+'\n'+'CPU: '+str(self.cpu)+'\n'+'->Cola bloq p/E:'+str(self.cola_bloq_e)+'\n'+'Entrada: '+str(self.ent)+'\n'+'->Cola bloq p/S:'+str(self.cola_bloq_s)+'\n'+'Salida: '+str(self.sal)+'\n'
+			resultado=resultado+'___________________________'+'\n'
+			self.guardar_datos()
+			
+			plt.legend()
+			
+			return[resultado, plt, self.hist_part]
+
+	# DEMAS PROCESOS DE PLANIFICADOR
+
+	def agregarHistorialParticiones(self, tiempo):
+		# Particiones fijas
+		if self.memoria.tipo == 'f':
+			for i in self.memoria.particiones:
+				aux = list()
+				aux.append(tiempo)
+				aux.append(i.id_part)
+				aux.append(i.proceso)
+				aux.append(i.tamaño)
+				self.hist_part.append(aux)
+		# Particiones variables
+		else:
+			id_aux = 1
+			for i in self.memoria.particiones:
+				aux = list()
+				aux.append(tiempo)
+				aux.append(id_aux)
+				aux.append(i.proceso)
+				aux.append(i.tamaño_particion)
+				id_aux = id_aux + 1
+				# print(aux)
+				self.hist_part.append(aux)
+
+	def agregarCola(self, t_actual):
+		# borrar tiene los procesos que ya estan en una cola, por lo cual hay 
+		# que sacarlos de la cola general (cola)
+		borrar = list()
+		for i in range(len(self.proceso)):
+			# si el arribo es menor a t_actual y hay espacio en la memoria, lo agrega a la cola de listos
+			# me parece que en el caso de que el TA sea menor es porque no pudo asignar anteriormente
+			if (self.proceso[i].arribo <= t_actual):
+				if (self.memoria.asignarMemoria(self.proceso[i].id, self.proceso[i].tamaño)):
+					# print('proceso ', self.proceso[i].id,' asigando a cola de listos')
+					nuevo = self.proceso[i]
+					self.cola.append(nuevo)
+					# arribo del proceso
+					plt.plot([t_actual, t_actual],[0, self.proceso[i].id], "^-.", color = "lime", mec = "black", ms = 8, alpha = 1) # 0.75 por si no anda
+					borrar.append(self.proceso[i])
+
+		# Si el proceso esta en memoria, no hay que tenerlo en la la lista de procesos
+		# por eso lo borramos
+		for i in borrar:
+			if (i in self.proceso):
+				self.proceso.remove(i)
+
+		# agregar a las colas particulares 
+		for p in self.cola:
+			if p.t_fin==0:
+				#busca la siguiente rafaga a ejecutar
+				while p.rafagas[p.ejecucion].tiempo==0:
+					p.ejecucion=p.ejecucion+1	
+
+				# para cola de listos 							
+				if (p.rafagas[p.ejecucion].recurso) == 'cpu':	
+					existe = False # en la cola de listos
+					for j in self.cola_listos:
+						if (j[0] == p.id):
+							existe = True # el proceso esta en la cola de listos 
+							break
+					if not existe:
+						if self.algoritmo == 'pri' or self.algoritmo == 'mlq':
+							self.cola_listos.append([p.id, p.rafagas[p.ejecucion].tiempo, p.prioridad])
+						elif self.algoritmo == 'sjf':
+							self.cola_listos.append([p.id, p.rafagas[p.ejecucion].tiempo, p.t_uso])
+						else:
+							self.cola_listos.append([p.id, p.rafagas[p.ejecucion].tiempo])
+
+				# para cola de bloqueados por entrada
+				if (p.rafagas[p.ejecucion].recurso) == 'e':
+					existe = False 
+					for j in self.cola_bloq_e:
+						if (j[0] == p.id):
+							existe = True # el proceso esta en la cola de listos 
+							break
+					if not existe:
+						self.cola_bloq_e.append([p.id, p.rafagas[p.ejecucion].tiempo])
+
+				# para cola de bloqueados por salidas
+				if (p.rafagas[p.ejecucion].recurso) == 's':
+					existe = False 
+					for j in self.cola_bloq_s:
+						if (j[0] == p.id):
+							existe = True # el proceso esta en la cola de listos 
+							break
+					if not existe:
+						self.cola_bloq_s.append([p.id, p.rafagas[p.ejecucion].tiempo])
+
+	def guardar_pcb(self):
+		pr_en_cpu = self.cpu
+		i = 0 
+		while pr_en_cpu[0] != self.cola_listos[i][0]:
+			i += 1
+		del self.cola_listos[i]
+		self.cola_listos.append(pr_en_cpu)
+
+
+	def elegir_proc_cb(self, tipo):
+		if tipo == 'e':
+			nuevop = self.cola_bloq_e[0]
+			self.ent = [nuevop[0], nuevop[1]]
+		else:
+			nuevop = self.cola_bloq_s[0]
+			self.sal = [nuevop[0], nuevop[1]]
+
+
+	def guardar_datos(self):
+
+		colaCpu = list()
+		for i in self.cola_listos:
+			colaCpu.append(i[0])
+
+		colaEnt = list()
+		for i in self.cola_bloq_e:
+			colaEnt.append(i[0])
+
+		colaSal = list()
+		for i in self.cola_bloq_s:
+			colaSal.append(i[0])
+
+		memoria = list()
+		for i in self.memoria.particiones:
+			memoria.append(copy.copy(i))
+
+		enCpu = list()
+		c = 0 # para mostrar solo el proceso, no el tiempo remanente
+		for i in self.cpu:
+			if c == 0:
+				enCpu.append(copy.copy(i))
+				c = c + 1
+
+		self.datos_proceso.append([colaCpu, colaEnt, colaSal, memoria, enCpu])
+
+	# cuando un proceso termina de usar un recurso, hay que sacarlo de la cola de ese recurso
+	def fin_rafaga(self, recurso, tipo, t):
+		p = 0 
+		while (p < len(self.cola) and self.cola[p].id != recurso[0]):
+			p = p + 1
+		if self.cola[p].id == recurso[0]:
+			self.cola[p].ejecucion = self.cola[p].ejecucion + 1
+
+		# se borra el proceso de la cola del recurso que estaba utilizando
+		if tipo == 'cpu':
+			del self.cola_listos[0]
+		elif tipo == 'e':
+			del self.cola_bloq_e[0]
+		elif tipo == 's':
+			del self.cola_bloq_s[0]
+
+	def terminar_proceso(self, t):
+		# se saca de la cola general y de la memoria a un proceso que termino todas sus rafagas
+		# buscamos el que se estaba ejecutando en la cola general
+		x = 0 
+		idp = self.cpu[0]
+		while (x < len(self.cola)) and (idp != self.cola[x].id):
+			x = x + 1
+		if idp == self.cola[x].id:
+			if self.cola[x].ejecucion == len(self.cola[x].rafagas):
+				self.memoria.desasignarMemoria(self.cpu[0])
+				plt.plot([t, t], [0, self.cpu[0]], "v-",ls="dashed", color = 'red', mec = 'firebrick', ms = 8, alpha = 0.75)
+				self.cola[x].finalizar(t)
+
+	def promediar_tiempos(self):
+		n = len(self.cola)
+		for p in self.cola:
+			self.retardo_prom = self.retardo_prom + p.retorno
+			self.espera_prom = self.espera_prom + p.espera
+
+		self.retardo_prom = round(self.retardo_prom/n, 2)
+		self.espera_prom = round(self.espera_prom/n, 2)
+
+# ---------------------------------------------------- PROCESO Y RAFAGA ----------------------------------------------------
+
+class proceso:
+	def __init__(self, idp, tam, ta, prior, raf):
+		self.id = idp
+		self.arribo = ta
+		self.tamaño = tam
+		self.prioridad = prior
+
+		self.t_fin = 0
+		self.retorno = 0 
+		self.t_uso = 0 # se modifica mas abajo
+
+		rafagas = raf.split("; ")
+		# print(rafagas)
+		if '' in rafagas:
+			rafagas.remove('')
+
+		self.rafagas = list()
+		for r in rafagas:
+			r = r.split(': ')
+
+			# lo siguiente surgio debido a problemas en el pasaje de datos de la base de datos
+			if ' ' in r[0]:
+				r[0] = r[0].replace(' ', '')
+
+			if ";" in r[1]:
+				r[1] = r[1].rstrip(';')
+
+			# se crean varios objetos rafagas
+			# se pasa como parametro el recurso y el tiempo que necesita para ejecutarse
+			self.rafagas.append(rafaga(r[0].lower(), int(r[1])))
+
+		for i in self.rafagas:
+			self.t_uso = self.t_uso + i.tiempo
+
+		self.espera = 0
+		self.ejecucion = 0 
+
+	def finalizar(self, t):
+		self.t_fin = t
+		self.retorno = self.t_fin - self.arribo
+		self.espera = self.retorno - self.t_uso
+
+class rafaga:
+	def __init__(self, rec, t):
+		self.recurso = rec
+		self.tiempo = t
+
+# ---------------------------------------------------- MEMORIA FIJA ----------------------------------------------------
+# particion fija 
+class particion:
+	def __init__(self, idPart, tam):
+		# tenemos id_part gracias a la tabla, esto no sucede en las particiones variable
+		self.id_part = idPart
+		self.tamaño = tam 
+		self.tamañoProceso = 0 
+		self.proceso = 0
+
+class memoria_fija:
+	def __init__(self, tam, algAsig):
+		self.tamaño = tam
+		self.particiones = []
+		#Será el tipo de asignacion de memoria: "BF" o "FF" en el caso de MEMORIA FIJA 
+		# y "WF" o "FF" en el caso de MEMORIA VARIABLE
+		self.algoritmoAsig = algAsig 
+		self.tipo = 'f'
+ 
+	def asignarMemoria(self, idp, tamp):
+		# First Fit
+		if self.algoritmoAsig == 'FF':
+			asignado = False
+			for k in range(0, len(self.particiones)):
+				if self.particiones[k].proceso == 0: # particion libre
+					if int(self.particiones[k].tamaño) >= tamp : # el proceso entra 
+						self.particiones[k].proceso = idp
+						self.particiones[k].tamañoProceso = tamp
+						# print('proceso', idp,' asignado a una particion')
+						return True 
+						break
+			if not asignado:
+				# como hacemos el control del tam del proceso al momento de la carga, el unico problema que 
+				# tendria un proceso para ser asigando es que haya o no otro proceso en la particion 
+
+				# el proceso no pudo ser asignado
+				return False
+		# Best Fit
+		else:
+			# opcion con el metodo de ordenar particones 
+			self.ordenarParticionesBF()
+			for k in range(0, len(self.particiones)):
+				if self.particiones[k].proceso == 0:
+					if int(self.particiones[k].tamaño) >= tamp:
+						self.particiones[k].proceso = idp
+						self.particiones[k].tamañoProceso = tamp
+						return True
+						break
+			return False
+
+	def ordenarParticionesBF(self):
+		(self.particiones).sort(key = lambda particion: int(particion.tamaño))
+
+	# quitar proceso de la particion
+	def desasignarMemoria(self, idp):
+		for i in range(0, len(self.particiones)):
+			if self.particiones[i].proceso == idp:
+				self.particiones[i].proceso = 0
+				self.particiones[i].tamañoProceso = 0
+				break
+
+# ---------------------------------------------------- MEMORIA VARIABLE ----------------------------------------------------
+
+class particion_variable:
+	def __init__(self, tamProc):
+		self.tamaño_particion  = tamProc
+		self.inicio = 0
+		self.fin = self.inicio + self.tamaño_particion
+		self.proceso = 0 # si es 0, no hay proceso
+
+class memoria_variable:
+	def __init__(self, tamMem, algAsig):
+		self.tamaño_memoria = tamMem
+		self.algoritmoAsig = algAsig # Solo FF y WF, NO BF
+		self.particiones = []
+		self.tipo = 'v'
+
+	def asignarMemoria(self, idp, tamProc):
+		if len(self.particiones) == 0:
+			x = particion_variable(tamProc)
+			x.proceso = idp
+			x.fin = tamProc
+
+			self.particiones.append(x)
+
+			y = particion_variable(self.tamaño_memoria - tamProc)
+			y.proceso = 0
+			y.inicio = x.fin
+			y.fin = self.tamaño_memoria
+
+			self.particiones.append(y)
+
+			return True
+		else:
+			if self.algoritmoAsig != 'WF':
+				flag = False
+				for i in range(0 , len(self.particiones)):
+
+					if self.particiones[i].proceso == 0:
+
+						if self.particiones[i].tamaño_particion == tamProc:
+							self.particiones[i].proceso = idp
+							return True
+							break
+
+						elif self.particiones[i].tamaño_particion > tamProc :
+							tamañoNuevo = self.particiones[i].tamaño_particion - tamProc
+							z = particion_variable(tamañoNuevo)
+
+							self.particiones[i].tamaño_particion = tamProc
+							self.particiones[i].proceso = idp
+							self.particiones[i].fin = self.particiones[i].inicio + tamProc
+
+							z.proceso = 0 
+							z.inicio = self.particiones[i].fin
+							z.fin = z.inicio + z.tamaño_particion
+
+							flag = True
+							pos = i + 1
+							break
+
+				if flag==True:
+					self.particiones.insert(pos,z)
+					return True
+				else:
+					return False
+
+			else:
+				mayor=0
+				mayorPos="null" 
+				for i in range(0,len(self.particiones)):
+					if self.particiones[i].proceso == 0:
+						if self.particiones[i].tamaño_particion >= tamProc:
+							if self.particiones[i].tamaño_particion >mayor:	
+								mayor = self.particiones[i].tamaño_particion
+								mayorPos=i
+				if mayorPos!="null":
+					if self.particiones[mayorPos].tamaño_particion == tamProc:
+						self.particiones[mayorPos].proceso = idp
+						return True
+					elif self.particiones[mayorPos].tamaño_particion > tamProc:
+						tamañoNuevo=self.particiones[mayorPos].tamaño_particion - tamProc
+						z=particion_variable(tamañoNuevo)
+						self.particiones[mayorPos].tamaño_particion = tamProc
+						self.particiones[mayorPos].proceso = idp
+						self.particiones[mayorPos].fin = self.particiones[mayorPos].inicio + tamProc
+						z.proceso=0
+						z.inicio=self.particiones[mayorPos].fin
+						z.fin=z.inicio+z.tamaño_particion
+						flag = True
+						pos = mayorPos + 1
+						self.particiones.insert(pos,z)
+						return True
+				else:
+					return False
+
+	def desasignarMemoria(self, idp):
+		ant_libre = False
+		pos_libre = False
+		for i in range(0, len(self.particiones)):
+			# buscamos la particion donde esta el proceso
+			if self.particiones[i].proceso == idp:
+				# la particion no es la primera, ni la utima en la memoria
+				if i != 0 and i != (len(self.particiones) - 1):
+					# la particion anterior esta libre
+					if self.particiones[i-1].proceso == 0:
+						ant_libre = True
+						pos1 = i -1 
+						self.particiones[i].inicio = self.particiones[i-1].inicio
+						self.particiones[i].tamaño_particion = self.particiones[i].tamaño_particion + self.particiones[i-1].tamaño_particion 
+					# la particion siguiente esta libre
+					if self.particiones[i+1].proceso == 0:
+						pos_libre = True
+						pos2 = i + 1
+						self.particiones[i].tamaño_particion = self.particiones[i].tamaño_particion + self.particiones[i+1].tamaño_particion 
+						self.particiones[i].fin = self.particiones[i+1].fin
+					# la particion resultante queda libre
+					self.particiones[i].proceso = 0
+					break
+				# es la primer particion
+				if i == 0:
+					# original :
+					# if self.particiones[i+1].proceso == 0:
+					# nuevo, porque daba out of index 
+					if (len(self.particiones) > 1) and (self.particiones[i+1].proceso == 0):
+						pos_libre = True
+						pos2 = i + 1
+						self.particiones[i].tamaño_particion = self.particiones[i].tamaño_particion + self.particiones[i+1].tamaño_particion 
+						self.particiones[i].fin = self.particiones[i+1].fin
+					self.particiones[i].proceso = 0
+					break
+				# es la ultima particion
+				if i == (len(self.particiones) - 1):
+					if self.particiones[i - 1].proceso == 0:
+						ant_libre = True
+						pos1 = i - 1
+						self.particiones[i].inicio = self.particiones[i-1].inicio
+						self.particiones[i].tamaño_particion = self.particiones[i].tamaño_particion + self.particiones[i-1].tamaño_particion 
+					self.particiones[i].proceso = 0 
+					break
+		if ant_libre:
+			del(self.particiones[pos1])
+			if pos_libre:
+				del(self.particiones[pos2 - 1])
+		else:
+			if pos_libre:
+				del(self.particiones[pos2])
+
+# Instancia que da inicio al programa
+app = QtWidgets.QApplication(sys.argv)
+# crea un objeto ventana de la clase ui
+window = Ui()
+# mostrar ventana
+window.show()
+# ejecutar 
+app.exec_()
+

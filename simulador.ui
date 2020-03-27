@@ -1,0 +1,995 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Ventana</class>
+ <widget class="QMainWindow" name="Ventana">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>857</width>
+    <height>838</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>821</width>
+      <height>781</height>
+     </rect>
+    </property>
+    <property name="tabShape">
+     <enum>QTabWidget::Rounded</enum>
+    </property>
+    <property name="currentIndex">
+     <number>1</number>
+    </property>
+    <property name="elideMode">
+     <enum>Qt::ElideNone</enum>
+    </property>
+    <widget class="QWidget" name="EntradaTab">
+     <attribute name="title">
+      <string>Entrada</string>
+     </attribute>
+     <widget class="QGroupBox" name="EntradaDerGroupBox">
+      <property name="geometry">
+       <rect>
+        <x>330</x>
+        <y>20</y>
+        <width>481</width>
+        <height>721</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Procesos</string>
+      </property>
+      <widget class="QGroupBox" name="NuevoProcGroupBox">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>30</y>
+         <width>440</width>
+         <height>280</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Nuevo Proceso</string>
+       </property>
+       <widget class="QLabel" name="IdProcLabel">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>30</y>
+          <width>60</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>ID Proceso</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="TALabel">
+        <property name="geometry">
+         <rect>
+          <x>143</x>
+          <y>30</y>
+          <width>81</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Tiempo de Arribo</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="TamProcLabel">
+        <property name="geometry">
+         <rect>
+          <x>299</x>
+          <y>30</y>
+          <width>60</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Tamaño (kB)</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="IdProcSpinBox">
+        <property name="geometry">
+         <rect>
+          <x>80</x>
+          <y>30</y>
+          <width>42</width>
+          <height>22</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="TASpinBox">
+        <property name="geometry">
+         <rect>
+          <x>229</x>
+          <y>30</y>
+          <width>50</width>
+          <height>22</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="TamProcSpinBox">
+        <property name="geometry">
+         <rect>
+          <x>360</x>
+          <y>30</y>
+          <width>60</width>
+          <height>22</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="CicloDeVidaLabel">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>100</y>
+          <width>71</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <italic>false</italic>
+          <bold>false</bold>
+          <underline>false</underline>
+          <strikeout>false</strikeout>
+          <kerning>true</kerning>
+         </font>
+        </property>
+        <property name="text">
+         <string>Ciclo de Vida</string>
+        </property>
+       </widget>
+       <widget class="QTableWidget" name="ProcActualTableWidget">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>140</y>
+          <width>401</width>
+          <height>90</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>R</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>T</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>a</string>
+         </property>
+        </column>
+        <item row="0" column="0">
+         <property name="text">
+          <string>CPU</string>
+         </property>
+        </item>
+        <item row="1" column="0">
+         <property name="text">
+          <string>0</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QPushButton" name="AgregarProcPushButton">
+        <property name="geometry">
+         <rect>
+          <x>320</x>
+          <y>240</y>
+          <width>100</width>
+          <height>30</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Agregar Proceso</string>
+        </property>
+       </widget>
+       <widget class="QWidget" name="horizontalLayoutWidget_3">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>80</y>
+          <width>261</width>
+          <height>51</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="AgregarEoSHorizontalLayout">
+         <item>
+          <widget class="QRadioButton" name="EntradaRadioButton">
+           <property name="text">
+            <string>Entrada</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="SalidaRadioButton">
+           <property name="text">
+            <string>Salida</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="AgregarPushButton">
+           <property name="text">
+            <string>Agregar</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QTableWidget" name="ListProcCargTableWidget">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>370</y>
+         <width>440</width>
+         <height>251</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="INICIARPushButton">
+       <property name="geometry">
+        <rect>
+         <x>350</x>
+         <y>660</y>
+         <width>101</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>INICIAR</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="BorrarSeleccionPushButton">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>670</y>
+         <width>101</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Borrar Selección</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="BorrarTablaPushButton">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>670</y>
+         <width>101</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Borrar Tabla</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="ListaProcCargLabel">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>340</y>
+         <width>131</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+         <underline>false</underline>
+         <strikeout>false</strikeout>
+         <kerning>true</kerning>
+        </font>
+       </property>
+       <property name="text">
+        <string>Lista de procesos cargados</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="EntradaIzqGroupBox">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>20</y>
+        <width>280</width>
+        <height>721</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>50</weight>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="title">
+       <string>Memoria</string>
+      </property>
+      <widget class="QRadioButton" name="FijasRadioButton">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>110</y>
+         <width>51</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Fijas</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="PartLabel">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>90</y>
+         <width>71</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Particiones</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="VariablesRadioButton">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>110</y>
+         <width>82</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Variables</string>
+       </property>
+      </widget>
+      <widget class="QGroupBox" name="MetAsigGroupBox">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>430</y>
+         <width>240</width>
+         <height>100</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Metodo de Asignación</string>
+       </property>
+       <widget class="QRadioButton" name="FirstRadioButton">
+        <property name="geometry">
+         <rect>
+          <x>50</x>
+          <y>30</y>
+          <width>61</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>First Fit</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="BestRadioButton">
+        <property name="geometry">
+         <rect>
+          <x>50</x>
+          <y>50</y>
+          <width>61</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Best Fit</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="WorstRadioButton">
+        <property name="geometry">
+         <rect>
+          <x>50</x>
+          <y>70</y>
+          <width>71</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Worst  Fit</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QGroupBox" name="AlgoritmoGroupBox">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>550</y>
+         <width>240</width>
+         <height>120</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Algoritmo</string>
+       </property>
+       <widget class="QComboBox" name="AlgortimoComboBox">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>30</y>
+          <width>200</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>First Coming First Service (FCFS)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Shorted Job First (SJF)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Shorted Remain Time First (SRTF)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Round Robin with Quantum (RRQ)</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QWidget" name="horizontalLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>40</x>
+          <y>70</y>
+          <width>170</width>
+          <height>30</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="QuantumHorizontalLayout">
+         <item>
+          <widget class="QLabel" name="QuantumLabel">
+           <property name="text">
+            <string>Quantum</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="QuantumSpinBox"/>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="horizontalLayoutWidget_4">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>30</y>
+         <width>231</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="TamMemHorizLayout">
+        <item>
+         <widget class="QLabel" name="TamMemLabel">
+          <property name="text">
+           <string>Tamaño (kB)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="TamMemSpinBox"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="Line" name="EntradaArribaLine">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>70</y>
+         <width>241</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="QGroupBox" name="PartFijaGroupBox">
+       <property name="geometry">
+        <rect>
+         <x>-1</x>
+         <y>139</y>
+         <width>281</width>
+         <height>271</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string/>
+       </property>
+       <widget class="QWidget" name="horizontalLayoutWidget_2">
+        <property name="geometry">
+         <rect>
+          <x>60</x>
+          <y>10</y>
+          <width>160</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="TamPartHorizLayout">
+         <item>
+          <widget class="QLabel" name="TamPartLabel">
+           <property name="text">
+            <string>Tamaño(kB)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="TamPartSpinBox"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QPushButton" name="EliminarPartPushButton">
+        <property name="geometry">
+         <rect>
+          <x>150</x>
+          <y>50</y>
+          <width>75</width>
+          <height>30</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Eliminar</string>
+        </property>
+       </widget>
+       <widget class="QTableWidget" name="ParticionesTableWidget">
+        <property name="geometry">
+         <rect>
+          <x>40</x>
+          <y>87</y>
+          <width>201</width>
+          <height>121</height>
+         </rect>
+        </property>
+        <column>
+         <property name="text">
+          <string>Numero</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Tamaño</string>
+         </property>
+        </column>
+       </widget>
+       <widget class="QPushButton" name="AgregarPartPushButton">
+        <property name="geometry">
+         <rect>
+          <x>60</x>
+          <y>50</y>
+          <width>75</width>
+          <height>30</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Agregar</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="EspacioOcupLabel">
+        <property name="geometry">
+         <rect>
+          <x>49</x>
+          <y>220</y>
+          <width>91</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Espacio Ocupado</string>
+        </property>
+       </widget>
+       <widget class="QProgressBar" name="EspacioOcupProgressBar">
+        <property name="geometry">
+         <rect>
+          <x>140</x>
+          <y>217</y>
+          <width>118</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="value">
+         <number>24</number>
+        </property>
+       </widget>
+       <widget class="QLabel" name="EspacioDispLabel">
+        <property name="geometry">
+         <rect>
+          <x>49</x>
+          <y>247</y>
+          <width>111</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Espacio Disponible (kB):</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="NroEspacioDispLabel">
+        <property name="geometry">
+         <rect>
+          <x>170</x>
+          <y>250</y>
+          <width>47</width>
+          <height>13</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>N</string>
+        </property>
+       </widget>
+      </widget>
+     </widget>
+     <widget class="Line" name="EntradaAbajoLine">
+      <property name="geometry">
+       <rect>
+        <x>49</x>
+        <y>430</y>
+        <width>241</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="SalidaTab">
+     <attribute name="title">
+      <string>Salida</string>
+     </attribute>
+     <widget class="QGroupBox" name="ProcesamPorTiempoGroupBox">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>50</y>
+        <width>291</width>
+        <height>621</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Procesamiento por tiempo</string>
+      </property>
+      <widget class="Line" name="SalidaArribaLine">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>270</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="Line" name="SalidaMedioLine">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>100</y>
+         <width>270</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="Line" name="SalidaMedioLine_2">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>480</y>
+         <width>270</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="QWidget" name="horizontalLayoutWidget_5">
+       <property name="geometry">
+        <rect>
+         <x>140</x>
+         <y>40</y>
+         <width>131</width>
+         <height>51</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="SegundoHorizontalLayout">
+        <item>
+         <widget class="QLabel" name="SegundoLabel">
+          <property name="text">
+           <string>Segundo</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="SegundoSpinBox"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="Line" name="SalidaVerticalLine">
+       <property name="geometry">
+        <rect>
+         <x>120</x>
+         <y>20</y>
+         <width>20</width>
+         <height>590</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+      <widget class="QLabel" name="ClockLabel">
+       <property name="geometry">
+        <rect>
+         <x>50</x>
+         <y>60</y>
+         <width>47</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Clock</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="ColaCPULabel">
+       <property name="geometry">
+        <rect>
+         <x>50</x>
+         <y>200</y>
+         <width>47</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Cola CPU</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="ColaSuspLabel">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>290</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Cola Supendidos</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="CargEnMemLabel">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>370</y>
+         <width>111</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Cargados en memoria</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="IdsProcsLabel">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>120</y>
+         <width>101</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>IDs de Procesos</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="PartOcupLabel">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>530</y>
+         <width>111</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Particiones Ocupadas</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="IdPartLabel">
+       <property name="geometry">
+        <rect>
+         <x>150</x>
+         <y>500</y>
+         <width>47</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>ID Part.</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="TamPartSalidaLabel">
+       <property name="geometry">
+        <rect>
+         <x>200</x>
+         <y>500</y>
+         <width>70</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Tamaño (kB)</string>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="PartOcupTextEdit">
+       <property name="geometry">
+        <rect>
+         <x>140</x>
+         <y>520</y>
+         <width>131</width>
+         <height>81</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QWidget" name="verticalLayoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>140</x>
+         <y>159</y>
+         <width>121</width>
+         <height>271</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="IDsProcsVerticalLayout">
+        <item>
+         <widget class="QLabel" name="label_21">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_26">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_27">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="HistDePlanifGroupBox">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>50</y>
+        <width>341</width>
+        <height>631</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>50</weight>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="title">
+       <string>Historial de Planificación</string>
+      </property>
+      <widget class="QTextEdit" name="HistPlanifTextEdit">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>40</y>
+         <width>281</width>
+         <height>501</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="DiagramaGanttPushButton">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>560</y>
+         <width>111</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Diagrama de Gantt</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="GuardarColaPushButton">
+       <property name="geometry">
+        <rect>
+         <x>200</x>
+         <y>560</y>
+         <width>111</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Guardar Cola </string>
+       </property>
+      </widget>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>857</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionCargar_Cola"/>
+   </widget>
+   <addaction name="menuFile"/>
+  </widget>
+  <action name="actionCargar_Cola">
+   <property name="text">
+    <string>Cargar Cola</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
